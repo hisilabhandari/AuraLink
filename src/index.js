@@ -121,7 +121,7 @@ app.get('/api/profile/:username', async (c) => {
     }
 
     // Get active links ordered by display_order
-    const { results: links } = await c.env.DB.prepare('SELECT id, title, url, is_active, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url FROM links WHERE username = ? ORDER BY display_order ASC')
+    const { results: links } = await c.env.DB.prepare('SELECT id, title, url, is_active, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url, image_url, icon_name, link_type, price, currency FROM links WHERE username = ? ORDER BY display_order ASC')
       .bind(cleanUsername)
       .all();
 
@@ -135,10 +135,16 @@ app.get('/api/profile/:username', async (c) => {
         backgroundType: profile.background_type,
         backgroundValue: profile.background_value,
         font: profile.font,
+        fontColor: profile.font_color,
         buttonStyle: profile.button_style,
         buttonColor: profile.button_color,
         buttonTextColor: profile.button_text_color,
         buttonBorderColor: profile.button_border_color
+      },
+      seo: {
+        title: profile.seo_title,
+        description: profile.seo_description,
+        allowIndexing: Boolean(profile.allow_indexing !== 0)
       },
       links: links.map(l => ({
         id: l.id,
@@ -150,7 +156,12 @@ app.get('/api/profile/:username', async (c) => {
         buttonTextColor: l.button_text_color,
         buttonBorderColor: l.button_border_color,
         buttonBorderRadius: l.button_border_radius,
-        showUrl: Boolean(l.show_url)
+        showUrl: Boolean(l.show_url),
+        imageUrl: l.image_url,
+        iconName: l.icon_name,
+        linkType: l.link_type,
+        price: l.price,
+        currency: l.currency
       })),
       googleAnalyticsId: profile.google_analytics_id
     };
@@ -165,7 +176,7 @@ app.get('/api/profile/:username', async (c) => {
 // Update Profile
 app.put('/api/profile/:username', async (c) => {
   const cleanUsername = c.req.param('username').trim().toLowerCase();
-  const { name, bio, avatarUrl, theme, links, googleAnalyticsId } = await c.req.json();
+  const { name, bio, avatarUrl, theme, seo, links, googleAnalyticsId } = await c.req.json();
 
   try {
     // 1. Update profiles table
@@ -177,10 +188,14 @@ app.put('/api/profile/:username', async (c) => {
         background_type = COALESCE(?, background_type),
         background_value = COALESCE(?, background_value),
         font = COALESCE(?, font),
+        font_color = COALESCE(?, font_color),
         button_style = COALESCE(?, button_style),
         button_color = COALESCE(?, button_color),
         button_text_color = COALESCE(?, button_text_color),
         button_border_color = COALESCE(?, button_border_color),
+        seo_title = COALESCE(?, seo_title),
+        seo_description = COALESCE(?, seo_description),
+        allow_indexing = COALESCE(?, allow_indexing),
         google_analytics_id = COALESCE(?, google_analytics_id),
         updated_at = CURRENT_TIMESTAMP
       WHERE username = ?
@@ -191,10 +206,14 @@ app.put('/api/profile/:username', async (c) => {
       theme?.backgroundType,
       theme?.backgroundValue,
       theme?.font,
+      theme?.fontColor,
       theme?.buttonStyle,
       theme?.buttonColor,
       theme?.buttonTextColor,
       theme?.buttonBorderColor,
+      seo?.title,
+      seo?.description,
+      seo?.allowIndexing === false ? 0 : 1,
       googleAnalyticsId,
       cleanUsername
     ).run();
@@ -207,7 +226,7 @@ app.put('/api/profile/:username', async (c) => {
       // Then, batch insert new links preserving display_order
       if (links.length > 0) {
         const statements = links.map((link, idx) => {
-          return c.env.DB.prepare('INSERT INTO links (id, username, title, url, is_active, display_order, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          return c.env.DB.prepare('INSERT INTO links (id, username, title, url, is_active, display_order, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url, image_url, icon_name, link_type, price, currency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
             .bind(
               link.id || crypto.randomUUID(), 
               cleanUsername, 
@@ -220,7 +239,12 @@ app.put('/api/profile/:username', async (c) => {
               link.buttonTextColor || null,
               link.buttonBorderColor || null,
               link.buttonBorderRadius || null,
-              link.showUrl ? 1 : 0
+              link.showUrl ? 1 : 0,
+              link.imageUrl || null,
+              link.iconName || null,
+              link.linkType || 'link',
+              link.price || null,
+              link.currency || 'USD'
             );
         });
         await c.env.DB.batch(statements);
@@ -232,7 +256,7 @@ app.put('/api/profile/:username', async (c) => {
       .bind(cleanUsername)
       .first();
 
-    const { results: dbLinks } = await c.env.DB.prepare('SELECT id, title, url, is_active, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url FROM links WHERE username = ? ORDER BY display_order ASC')
+    const { results: dbLinks } = await c.env.DB.prepare('SELECT id, title, url, is_active, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url, image_url, icon_name, link_type, price, currency FROM links WHERE username = ? ORDER BY display_order ASC')
       .bind(cleanUsername)
       .all();
 
@@ -245,10 +269,16 @@ app.put('/api/profile/:username', async (c) => {
         backgroundType: profile.background_type,
         backgroundValue: profile.background_value,
         font: profile.font,
+        fontColor: profile.font_color,
         buttonStyle: profile.button_style,
         buttonColor: profile.button_color,
         buttonTextColor: profile.button_text_color,
         buttonBorderColor: profile.button_border_color
+      },
+      seo: {
+        title: profile.seo_title,
+        description: profile.seo_description,
+        allowIndexing: Boolean(profile.allow_indexing !== 0)
       },
       links: dbLinks.map(l => ({
         id: l.id,
@@ -260,7 +290,12 @@ app.put('/api/profile/:username', async (c) => {
         buttonTextColor: l.button_text_color,
         buttonBorderColor: l.button_border_color,
         buttonBorderRadius: l.button_border_radius,
-        showUrl: Boolean(l.show_url)
+        showUrl: Boolean(l.show_url),
+        imageUrl: l.image_url,
+        iconName: l.icon_name,
+        linkType: l.link_type,
+        price: l.price,
+        currency: l.currency
       })),
       googleAnalyticsId: profile.google_analytics_id
     };

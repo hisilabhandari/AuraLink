@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Link2, BarChart3, Palette, User, Plus, Trash2, Save, 
-  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight 
+  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings 
 } from 'lucide-react';
+import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
+
+const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch };
 
 const API_BASE = '/api';
 
@@ -360,6 +363,42 @@ export default function CreatorDashboard({ username, onLogout }) {
       btnColor: '#ea580c',
       textColor: '#ffedd5',
       premium: false
+    },
+    {
+      name: 'Midnight Velvet',
+      type: 'gradient',
+      value: 'linear-gradient(135deg, #2e0249, #570a57)',
+      btnStyle: 'pill',
+      btnColor: '#a91079',
+      textColor: '#ffffff',
+      premium: false
+    },
+    {
+      name: 'Golden Hour',
+      type: 'gradient',
+      value: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      btnStyle: 'dashed',
+      btnColor: '#b45309',
+      textColor: '#fffbeb',
+      premium: true
+    },
+    {
+      name: 'Arctic Frost',
+      type: 'gradient',
+      value: 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+      btnStyle: 'soft',
+      btnColor: 'rgba(2, 132, 199, 0.1)',
+      textColor: '#0369a1',
+      premium: false
+    },
+    {
+      name: 'Dark Matter',
+      type: 'flat',
+      value: '#09090b',
+      btnStyle: 'shadow',
+      btnColor: '#27272a',
+      textColor: '#ffffff',
+      premium: true
     }
   ];
 
@@ -734,6 +773,10 @@ export default function CreatorDashboard({ username, onLogout }) {
                         <option value="solid">Solid Background</option>
                         <option value="outline">Outline Border</option>
                         <option value="glassmorphic">Glassmorphic Glow</option>
+                        <option value="pill">Pill Shape</option>
+                        <option value="soft">Soft Background</option>
+                        <option value="shadow">Retro Shadow Offset</option>
+                        <option value="dashed">Dashed Border</option>
                         {isPremium && <option value="neon">Neon Digital</option>}
                         {isPremium && <option value="pastel">Rounded Pastel</option>}
                       </select>
