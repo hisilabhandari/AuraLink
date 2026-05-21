@@ -596,6 +596,7 @@ app.post('/api/upload', async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = body.file; // Expecting multipart field named 'file'
+    const username = body.username; // To organize by user
 
     if (!file || !(file instanceof File)) {
       return c.json({ error: 'No valid image file uploaded' }, 400);
@@ -604,13 +605,16 @@ app.post('/api/upload', async (c) => {
     const extension = file.name.split('.').pop();
     const uniqueName = `${crypto.randomUUID()}.${extension}`;
     
+    // Determine path based on username presence
+    const filePath = username ? `User/${username}/${uniqueName}` : `Assets/${uniqueName}`;
+    
     // Put file buffer to Cloudflare R2 bucket
     const buffer = await file.arrayBuffer();
-    await c.env.BUCKET.put(uniqueName, buffer, {
+    await c.env.BUCKET.put(filePath, buffer, {
       httpMetadata: { contentType: file.type }
     });
 
-    return c.json({ url: `/images/${uniqueName}` });
+    return c.json({ url: `/images/${filePath}` });
 
   } catch (err) {
     console.error(err);
@@ -618,12 +622,50 @@ app.post('/api/upload', async (c) => {
   }
 });
 
-// Serve image from R2
-app.get('/images/:filename', async (c) => {
+// List User Media
+app.get('/api/media/:username', async (c) => {
+  const username = c.req.param('username');
+  try {
+    const prefix = `User/${username}/`;
+    const listed = await c.env.BUCKET.list({ prefix });
+    
+    const files = listed.objects.map(obj => ({
+      key: obj.key,
+      url: `/images/${obj.key}`,
+      size: obj.size,
+      uploaded: obj.uploaded
+    }));
+
+    return c.json({ files });
+  } catch (err) {
+    console.error(err);
+    return c.json({ error: 'Failed to list media' }, 500);
+  }
+});
+
+// Delete User Media
+app.delete('/api/media/:username/:filename', async (c) => {
+  const username = c.req.param('username');
   const filename = c.req.param('filename');
+  try {
+    const key = `User/${username}/${filename}`;
+    await c.env.BUCKET.delete(key);
+    return c.json({ message: 'File deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    return c.json({ error: 'Failed to delete media' }, 500);
+  }
+});
+
+// Serve image from R2 (supports nested paths like /images/User/creator/xyz.jpg)
+app.get('/images/*', async (c) => {
+  const pathStart = c.req.url.indexOf('/images/') + 8;
+  const filePath = c.req.url.substring(pathStart);
+  
+  if (!filePath) return c.text('Image not found', 404);
   
   try {
-    const object = await c.env.BUCKET.get(filename);
+    const object = await c.env.BUCKET.get(filePath);
     if (!object) {
       return c.text('Image not found', 404);
     }
