@@ -16,7 +16,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const [proStatus, setProStatus] = useState('none');
   
   // Admin states
   const [adminUsers, setAdminUsers] = useState([]);
@@ -86,7 +86,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
       const cachedUser = localStorage.getItem('auralink_user');
       if (cachedUser) {
         const userObj = JSON.parse(cachedUser);
-        setIsPremium(userObj.isPremium);
+        setProStatus(userObj.proStatus || 'none');
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -121,10 +121,27 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
   const handleAdminAction = async (action, targetUsername) => {
     try {
-      const res = await fetch(`${API_BASE}/admin/users/${targetUsername}`, {
+      let endpoint = '';
+      let body = {};
+      
+      if (action === 'grant_pro') {
+        endpoint = `${API_BASE}/admin/approve-pro/${targetUsername}`;
+        body = { status: 'approved' };
+      } else if (action === 'revoke_pro') {
+        endpoint = `${API_BASE}/admin/approve-pro/${targetUsername}`;
+        body = { status: 'none' };
+      } else if (action === 'suspend') {
+        endpoint = `${API_BASE}/admin/suspend-user/${targetUsername}`;
+        body = { status: 'suspended', reason: 'Admin action' };
+      } else if (action === 'unsuspend') {
+        endpoint = `${API_BASE}/admin/suspend-user/${targetUsername}`;
+        body = { status: 'active', reason: '' };
+      }
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
         // Refresh users
@@ -230,23 +247,24 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
     handleSave(updatedProfile);
   };
 
-  // Toggle Premium simulated helper
-  const handleTogglePremium = async () => {
+  // Upgrade to Pro Request
+  const handleUpgradeToPro = async () => {
     try {
-      const res = await fetch(`${API_BASE}/profile/${username}/toggle-premium`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/profile/${username}/request-pro`, { method: 'POST' });
       if (res.ok) {
-        const data = await res.json();
-        setIsPremium(data.isPremium);
+        setProStatus('pending');
         // update local cached user
         const cachedUser = localStorage.getItem('auralink_user');
         if (cachedUser) {
           const userObj = JSON.parse(cachedUser);
-          userObj.isPremium = data.isPremium;
+          userObj.proStatus = 'pending';
           localStorage.setItem('auralink_user', JSON.stringify(userObj));
         }
+      } else {
+        alert('Failed to request pro upgrade.');
       }
     } catch (err) {
-      console.error('Error toggling premium status:', err);
+      console.error('Error requesting premium status:', err);
     }
   };
 
@@ -502,7 +520,13 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
             <div className="sidebar-user">
               <div className="user-info">
                 <span className="username">@{username}</span>
-                <span className="plan-badge">{isPremium ? 'PRO' : 'FREE'}</span>
+                {proStatus === 'approved' ? (
+                  <span className="plan-badge" style={{ background: 'var(--success)', color: '#000' }}>PRO</span>
+                ) : proStatus === 'pending' ? (
+                  <span className="plan-badge" style={{ background: 'var(--warning)', color: '#000' }}>PENDING</span>
+                ) : (
+                  <button onClick={handleUpgradeToPro} className="btn-primary" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>UPGRADE TO PRO</button>
+                )}
               </div>
               <button onClick={onLogout} className="btn-text" title="Log Out">
                 <LogOut size={18} />
@@ -1160,22 +1184,27 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                               <td style={{ fontWeight: '500' }}>@{u.username}</td>
                               <td>{u.role.toUpperCase()}</td>
                               <td>
-                                {u.is_pro ? (
+                                {u.pro_status === 'approved' ? (
                                   <span style={{ color: 'var(--success)', fontWeight: '500' }}>Active PRO</span>
+                                ) : u.pro_status === 'pending' ? (
+                                  <span style={{ color: 'var(--warning)', fontWeight: '500' }}>Pending</span>
                                 ) : (
                                   <span style={{ color: 'var(--text-muted)' }}>Free</span>
                                 )}
                               </td>
                               <td>
-                                {u.is_suspended ? <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Suspended</span> : <span style={{ color: 'var(--success)' }}>Active</span>}
+                                {u.account_status === 'suspended' ? <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Suspended</span> : <span style={{ color: 'var(--success)' }}>Active</span>}
                               </td>
                               <td>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  <button onClick={() => handleAdminAction(u.is_pro ? 'revoke_pro' : 'grant_pro', u.username)} className={u.is_pro ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>
-                                    {u.is_pro ? 'Revoke PRO' : 'Grant PRO'}
-                                  </button>
-                                  <button onClick={() => handleAdminAction(u.is_suspended ? 'unsuspend' : 'suspend', u.username)} className="btn-secondary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', color: u.is_suspended ? 'var(--success)' : 'var(--warning)' }}>
-                                    {u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                                  {u.pro_status === 'pending' && (
+                                    <button onClick={() => handleAdminAction('grant_pro', u.username)} className="btn-primary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>Grant PRO</button>
+                                  )}
+                                  {u.pro_status === 'approved' && (
+                                    <button onClick={() => handleAdminAction('revoke_pro', u.username)} className="btn-secondary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>Revoke PRO</button>
+                                  )}
+                                  <button onClick={() => handleAdminAction(u.account_status === 'suspended' ? 'unsuspend' : 'suspend', u.username)} className="btn-secondary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', color: u.account_status === 'suspended' ? 'var(--success)' : 'var(--warning)' }}>
+                                    {u.account_status === 'suspended' ? 'Unsuspend' : 'Suspend'}
                                   </button>
                                 </div>
                               </td>
