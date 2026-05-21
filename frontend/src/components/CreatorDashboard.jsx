@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Link2, BarChart3, Palette, User, Plus, Trash2, Save, 
-  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings 
+  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings, Image as ImageIcon
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
+import MediaManager from './MediaManager';
 
 const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch };
 
@@ -20,8 +21,10 @@ export default function CreatorDashboard({ username, onLogout }) {
   // Link form states
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [expandedLinkId, setExpandedLinkId] = useState(null);
+
+  // Media Manager state
+  const [mediaTarget, setMediaTarget] = useState(null); // { type: 'avatar' } or { type: 'link', id: '...' }
 
   const handleUpdateLinkStyle = (linkId, key, value) => {
     const updatedLinks = profile.links.map(l => {
@@ -35,32 +38,18 @@ export default function CreatorDashboard({ username, onLogout }) {
     handleSave(updatedProfile);
   };
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleMediaSelect = (url) => {
+    if (!mediaTarget) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      setUploadingAvatar(true);
-      const res = await fetch(`${API_BASE}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedProfile = { ...profile, avatarUrl: data.url };
-        setProfile(updatedProfile);
-        handleSave(updatedProfile);
-      } else {
-        alert('Upload failed. Make sure your file is a valid image under 5MB.');
-      }
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-    } finally {
-      setUploadingAvatar(false);
+    if (mediaTarget.type === 'avatar') {
+      const updatedProfile = { ...profile, avatarUrl: url };
+      setProfile(updatedProfile);
+      handleSave(updatedProfile);
+    } else if (mediaTarget.type === 'link') {
+      handleUpdateLinkStyle(mediaTarget.id, 'imageUrl', url);
     }
+    
+    setMediaTarget(null);
   };
 
   // Fetch profile & analytics
@@ -502,16 +491,14 @@ export default function CreatorDashboard({ username, onLogout }) {
                         ) : (
                           <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px dashed var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>No Pic</div>
                         )}
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          style={{ display: 'none' }}
-                          id="avatar-file-input"
-                        />
-                        <label htmlFor="avatar-file-input" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}>
-                          {uploadingAvatar ? 'Uploading...' : 'Choose Image'}
-                        </label>
+                        <button 
+                          type="button"
+                          onClick={() => setMediaTarget({ type: 'avatar' })}
+                          className="btn btn-secondary" 
+                          style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}
+                        >
+                          <ImageIcon size={14} style={{ marginRight: '0.3rem' }}/> Media Library
+                        </button>
                         {profile.avatarUrl && (
                           <button 
                             type="button" 
@@ -737,7 +724,16 @@ export default function CreatorDashboard({ username, onLogout }) {
                                       </select>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                      <label>Custom Image URL</label>
+                                      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        Custom Image URL
+                                        <button 
+                                          type="button" 
+                                          onClick={() => setMediaTarget({ type: 'link', id: link.id })}
+                                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                        >
+                                          <ImageIcon size={12} /> Pick
+                                        </button>
+                                      </label>
                                       <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
                                     </div>
                                   </div>
@@ -1082,23 +1078,9 @@ export default function CreatorDashboard({ username, onLogout }) {
 
             </div>
 
-            {/* Right: Phone preview */}
+            {/* Right: Live Preview */}
             <div className="preview-pane">
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Eye size={14} /> LIVE PREVIEW (SIMULATOR)
-              </div>
-              
               <div className="phone-mockup">
-                <div className="phone-speaker"></div>
-                <div 
-                  className="phone-screen" 
-                  style={{ 
-                    background: profile.theme.backgroundValue, 
-                    fontFamily: profile.theme.font === 'monospace' ? 'Courier New, monospace' : profile.theme.font,
-                    color: profile.theme.backgroundValue.includes('#fdf2f8') ? '#4c0519' : '#ffffff' 
-                  }}
-                >
-                  
                   {profile.avatarUrl ? (
                     <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
                   ) : (
