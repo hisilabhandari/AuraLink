@@ -23,8 +23,8 @@ export default function CreatorDashboard({ username, onLogout }) {
   const [newUrl, setNewUrl] = useState('');
   const [expandedLinkId, setExpandedLinkId] = useState(null);
 
-  // Media Manager state
-  const [mediaTarget, setMediaTarget] = useState(null); // { type: 'avatar' } or { type: 'link', id: '...' }
+  // Media Manager target state
+  const [mediaTarget, setMediaTarget] = useState(null);
 
   const handleUpdateLinkStyle = (linkId, key, value) => {
     const updatedLinks = profile.links.map(l => {
@@ -393,6 +393,7 @@ export default function CreatorDashboard({ username, onLogout }) {
 
   return (
     <div className="app-container">
+      {mediaTarget && <MediaManager onSelect={handleMediaSelect} onClose={() => setMediaTarget(null)} />}
       <div className="dashboard-layout">
         
         {/* Sidebar Nav */}
@@ -484,7 +485,7 @@ export default function CreatorDashboard({ username, onLogout }) {
                     <h2 className="card-title"><User size={18} /> Profile Bio Details</h2>
                     
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                      <label>Avatar Photo (Upload to Cloudflare R2)</label>
+                      <label>Avatar Photo</label>
                       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.4rem' }}>
                         {profile.avatarUrl ? (
                           <img src={profile.avatarUrl} alt="Avatar Preview" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-light)' }} />
@@ -492,12 +493,12 @@ export default function CreatorDashboard({ username, onLogout }) {
                           <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px dashed var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>No Pic</div>
                         )}
                         <button 
-                          type="button"
+                          type="button" 
                           onClick={() => setMediaTarget({ type: 'avatar' })}
                           className="btn btn-secondary" 
                           style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}
                         >
-                          <ImageIcon size={14} style={{ marginRight: '0.3rem' }}/> Media Library
+                          <ImageIcon size={14} style={{ marginRight: '0.3rem', display: 'inline', verticalAlign: 'text-bottom' }} /> Choose Image
                         </button>
                         {profile.avatarUrl && (
                           <button 
@@ -731,7 +732,7 @@ export default function CreatorDashboard({ username, onLogout }) {
                                           onClick={() => setMediaTarget({ type: 'link', id: link.id })}
                                           style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                                         >
-                                          <ImageIcon size={12} /> Pick
+                                          <ImageIcon size={12} /> Library
                                         </button>
                                       </label>
                                       <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
@@ -1167,6 +1168,14 @@ export default function CreatorDashboard({ username, onLogout }) {
         </main>
 
       </div>
+      
+      {mediaTarget && (
+        <MediaManager 
+          username={username}
+          onSelectImage={handleMediaSelect}
+          onClose={() => setMediaTarget(null)}
+        />
+      )}
     </div>
   );
 }
