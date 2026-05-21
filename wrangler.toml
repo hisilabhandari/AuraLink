@@ -1,0 +1,17 @@
+name = "auralink"
+main = "src/index.js"
+compatibility_date = "2024-03-01"
+
+[assets]
+directory = "./frontend/dist"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "auralink-db"
+database_id = "auralink-db-uuid-local"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "auralink-r2"
+preview_bucket_name = "auralink-r2-preview"

@@ -1,0 +1,192 @@
+{
+  "users": {
+    "creator1": {
+      "username": "creator1",
+      "password": "password123",
+      "isPremium": true
+    },
+    "demo": {
+      "username": "demo",
+      "password": "password123",
+      "isPremium": false
+    }
+  },
+  "profiles": {
+    "creator1": {
+      "username": "creator1",
+      "name": "Alex Rivers",
+      "bio": "Digital Creator & Tech Reviewer. Sharing my favorite gear, templates, and courses.",
+      "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80",
+      "theme": {
+        "backgroundType": "gradient",
+        "backgroundValue": "linear-gradient(135deg, #0f172a, #1e293b)",
+        "font": "monospace",
+        "buttonStyle": "solid",
+        "buttonColor": "#3b82f6",
+        "buttonTextColor": "#ffffff",
+        "buttonBorderColor": "transparent"
+      },
+      "links": [
+        {
+          "id": "link-1",
+          "title": "🎥 My YouTube Channel",
+          "url": "https://youtube.com",
+          "active": true
+        },
+        {
+          "id": "link-2",
+          "title": "💻 Premium Notion Workspaces (Use code AURA for 20% off)",
+          "url": "https://notion.so",
+          "active": true
+        },
+        {
+          "id": "link-3",
+          "title": "🛍️ Affiliate Shop: Setup & Gear",
+          "url": "https://amazon.com",
+          "active": true
+        },
+        {
+          "id": "link-4",
+          "title": "🐦 Daily Tech Tips on Twitter / X",
+          "url": "https://x.com",
+          "active": true
+        }
+      ]
+    },
+    "demo": {
+      "username": "demo",
+      "name": "Jane Doe",
+      "bio": "Minimalist Designer & Writer. Building clean interfaces and writing monthly letters.",
+      "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&h=256&q=80",
+      "theme": {
+        "backgroundType": "flat",
+        "backgroundValue": "#0f172a",
+        "font": "Inter",
+        "buttonStyle": "solid",
+        "buttonColor": "#3b82f6",
+        "buttonTextColor": "#ffffff",
+        "buttonBorderColor": "transparent"
+      },
+      "links": [
+        {
+          "id": "link-demo-1",
+          "title": "🎨 UI Design Portfolio",
+          "url": "https://dribbble.com",
+          "active": true
+        },
+        {
+          "id": "link-demo-2",
+          "title": "✍️ Read My Newsletter",
+          "url": "https://substack.com",
+          "active": true
+        }
+      ]
+    }
+  },
+  "views": [
+    {
+      "id": "v1",
+      "username": "creator1",
+      "timestamp": "2026-05-21T02:00:00.000Z",
+      "referrer": "Instagram"
+    },
+    {
+      "id": "v2",
+      "username": "creator1",
+      "timestamp": "2026-05-21T03:30:00.000Z",
+      "referrer": "Twitter/X"
+    },
+    {
+      "id": "v3",
+      "username": "creator1",
+      "timestamp": "2026-05-21T04:15:00.000Z",
+      "referrer": "Direct"
+    },
+    {
+      "id": "v4",
+      "username": "creator1",
+      "timestamp": "2026-05-21T05:00:00.000Z",
+      "referrer": "Instagram"
+    },
+    {
+      "id": "v5",
+      "username": "creator1",
+      "timestamp": "2026-05-21T06:45:00.000Z",
+      "referrer": "YouTube"
+    },
+    {
+      "id": "v6",
+      "username": "creator1",
+      "timestamp": "2026-05-21T08:00:00.000Z",
+      "referrer": "Direct"
+    },
+    {
+      "id": "v7",
+      "username": "creator1",
+      "timestamp": "2026-05-21T09:15:00.000Z",
+      "referrer": "Instagram"
+    },
+    {
+      "id": "v8",
+      "username": "creator1",
+      "timestamp": "2026-05-21T10:00:00.000Z",
+      "referrer": "TikTok"
+    },
+    {
+      "id": "v9",
+      "username": "creator1",
+      "timestamp": "2026-05-21T10:30:00.000Z",
+      "referrer": "Instagram"
+    },
+    {
+      "id": "v10",
+      "username": "creator1",
+      "timestamp": "2026-05-21T11:00:00.000Z",
+      "referrer": "Direct"
+    }
+  ],
+  "clicks": [
+    {
+      "id": "c1",
+      "username": "creator1",
+      "linkId": "link-1",
+      "timestamp": "2026-05-21T02:05:00.000Z"
+    },
+    {
+      "id": "c2",
+      "username": "creator1",
+      "linkId": "link-2",
+      "timestamp": "2026-05-21T03:32:00.000Z"
+    },
+    {
+      "id": "c3",
+      "username": "creator1",
+      "linkId": "link-1",
+      "timestamp": "2026-05-21T05:02:00.000Z"
+    },
+    {
+      "id": "c4",
+      "username": "creator1",
+      "linkId": "link-3",
+      "timestamp": "2026-05-21T06:48:00.000Z"
+    },
+    {
+      "id": "c5",
+      "username": "creator1",
+      "linkId": "link-2",
+      "timestamp": "2026-05-21T09:20:00.000Z"
+    },
+    {
+      "id": "c6",
+      "username": "creator1",
+      "linkId": "link-1",
+      "timestamp": "2026-05-21T10:05:00.000Z"
+    },
+    {
+      "id": "c7",
+      "username": "creator1",
+      "linkId": "link-4",
+      "timestamp": "2026-05-21T10:35:00.000Z"
+    }
+  ]
+}

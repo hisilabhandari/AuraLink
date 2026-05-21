@@ -1,0 +1,19 @@
+{
+  "name": "auralink-cloudflare-worker",
+  "version": "1.0.0",
+  "description": "Unified Cloudflare Worker for AuraLink Platform",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build:frontend": "cd frontend && npm run build",
+    "d1:init": "wrangler d1 execute auralink-db --local --file=schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.2.8"
+  },
+  "devDependencies": {
+    "wrangler": "^3.57.1"
+  }
+}
