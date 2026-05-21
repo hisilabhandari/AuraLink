@@ -3,7 +3,6 @@ import LandingPage from './components/LandingPage';
 import AuthForm from './components/AuthForm';
 import CreatorDashboard from './components/CreatorDashboard';
 import PublicBioPage from './components/PublicBioPage';
-import AdminDashboard from './components/AdminDashboard';
 
 export default function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#');
@@ -48,8 +47,7 @@ export default function App() {
     }
     setUser(username);
     setRole(currentRole);
-    if (currentRole === 'admin') navigateTo('#admin');
-    else navigateTo('#dashboard');
+    navigateTo('#dashboard');
   };
 
   const handleLogout = () => {
@@ -92,20 +90,9 @@ export default function App() {
         <CreatorDashboard 
           username={user} 
           onLogout={handleLogout} 
+          isAdmin={role === 'admin'}
         />
       );
-      
-    case '#admin':
-      if (!user || role !== 'admin') {
-        window.location.hash = '#auth';
-        return null;
-      }
-      return (
-        <AdminDashboard 
-          onLogout={handleLogout} 
-        />
-      );
-      
     default:
       return <LandingPage onNavigate={navigateTo} />;
   }

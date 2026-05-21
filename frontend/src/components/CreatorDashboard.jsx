@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Link2, BarChart3, Palette, User, Plus, Trash2, Save, 
-  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings 
+  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings, Shield, Image as ImageIcon
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
+import MediaManager from './MediaManager';
 
 const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch };
 
 const API_BASE = '/api';
 
-export default function CreatorDashboard({ username, onLogout }) {
-  const [activeTab, setActiveTab] = useState('links'); // 'links', 'design', 'analytics'
+export default function CreatorDashboard({ username, onLogout, isAdmin }) {
+  const [activeTab, setActiveTab] = useState('links'); // 'links', 'design', 'analytics', 'admin'
   const [profile, setProfile] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   
+  // Admin states
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminReports, setAdminReports] = useState([]);
+  
   // Link form states
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [expandedLinkId, setExpandedLinkId] = useState(null);
+
+  // Media Manager state
+  const [mediaTarget, setMediaTarget] = useState(null);
 
   const handleUpdateLinkStyle = (linkId, key, value) => {
     const updatedLinks = profile.links.map(l => {
@@ -35,32 +42,18 @@ export default function CreatorDashboard({ username, onLogout }) {
     handleSave(updatedProfile);
   };
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleMediaSelect = (url) => {
+    if (!mediaTarget) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      setUploadingAvatar(true);
-      const res = await fetch(`${API_BASE}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedProfile = { ...profile, avatarUrl: data.url };
-        setProfile(updatedProfile);
-        handleSave(updatedProfile);
-      } else {
-        alert('Upload failed. Make sure your file is a valid image under 5MB.');
-      }
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-    } finally {
-      setUploadingAvatar(false);
+    if (mediaTarget.type === 'avatar') {
+      const updatedProfile = { ...profile, avatarUrl: url };
+      setProfile(updatedProfile);
+      handleSave(updatedProfile);
+    } else if (mediaTarget.type === 'link') {
+      handleUpdateLinkStyle(mediaTarget.id, 'imageUrl', url);
     }
+    
+    setMediaTarget(null);
   };
 
   // Fetch profile & analytics
@@ -77,6 +70,16 @@ export default function CreatorDashboard({ username, onLogout }) {
       if (analRes.ok) {
         const analData = await analRes.json();
         setAnalytics(analData);
+      }
+      
+      // Admin data fetch
+      if (isAdmin) {
+        const [usersRes, reportsRes] = await Promise.all([
+          fetch(`${API_BASE}/admin/users`),
+          fetch(`${API_BASE}/admin/reports`)
+        ]);
+        if (usersRes.ok) setAdminUsers(await usersRes.json());
+        if (reportsRes.ok) setAdminReports(await reportsRes.json());
       }
       
       // Get user premium info from localStorage (simulated session)
@@ -113,6 +116,44 @@ export default function CreatorDashboard({ username, onLogout }) {
       console.error('Error saving profile:', err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAdminAction = async (action, targetUsername) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${targetUsername}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      if (res.ok) {
+        // Refresh users
+        const usersRes = await fetch(`${API_BASE}/admin/users`);
+        if (usersRes.ok) setAdminUsers(await usersRes.json());
+      } else {
+        alert('Action failed.');
+      }
+    } catch (err) {
+      console.error('Error performing admin action:', err);
+    }
+  };
+
+  const handleResolveReport = async (reportId) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/reports/${reportId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resolve' })
+      });
+      if (res.ok) {
+        // Refresh reports
+        const reportsRes = await fetch(`${API_BASE}/admin/reports`);
+        if (reportsRes.ok) setAdminReports(await reportsRes.json());
+      } else {
+        alert('Action failed.');
+      }
+    } catch (err) {
+      console.error('Error resolving report:', err);
     }
   };
 
@@ -438,6 +479,17 @@ export default function CreatorDashboard({ username, onLogout }) {
                 <BarChart3 size={18} />
                 <span>Analytics</span>
               </button>
+              
+              {isAdmin && (
+                <button 
+                  onClick={() => setActiveTab('admin')}
+                  className={`sidebar-item ${activeTab === 'admin' ? 'active' : ''}`}
+                  style={{ marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}
+                >
+                  <Shield size={18} color="var(--primary)" />
+                  <span style={{ color: 'var(--primary)', fontWeight: '600' }}>Admin Panel</span>
+                </button>
+              )}
             </nav>
           </div>
           
@@ -502,16 +554,14 @@ export default function CreatorDashboard({ username, onLogout }) {
                         ) : (
                           <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px dashed var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>No Pic</div>
                         )}
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          style={{ display: 'none' }}
-                          id="avatar-file-input"
-                        />
-                        <label htmlFor="avatar-file-input" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}>
-                          {uploadingAvatar ? 'Uploading...' : 'Choose Image'}
-                        </label>
+                        <button 
+                          type="button" 
+                          onClick={() => setMediaTarget({ type: 'avatar' })}
+                          className="btn btn-secondary" 
+                          style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}
+                        >
+                          <ImageIcon size={14} style={{ marginRight: '0.3rem', display: 'inline', verticalAlign: 'text-bottom' }} /> Choose Image
+                        </button>
                         {profile.avatarUrl && (
                           <button 
                             type="button" 
@@ -737,7 +787,16 @@ export default function CreatorDashboard({ username, onLogout }) {
                                       </select>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                      <label>Custom Image URL</label>
+                                      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        Custom Image URL
+                                        <button 
+                                          type="button" 
+                                          onClick={() => setMediaTarget({ type: 'link', id: link.id })}
+                                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                        >
+                                          <ImageIcon size={12} /> Library
+                                        </button>
+                                      </label>
                                       <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
                                     </div>
                                   </div>
@@ -1080,6 +1139,95 @@ export default function CreatorDashboard({ username, onLogout }) {
                 </>
               )}
 
+              {isAdmin && activeTab === 'admin' && (
+                <>
+                  <section className="editor-card" style={{ marginBottom: '2rem' }}>
+                    <h2 className="card-title"><Shield size={18} /> User Management</h2>
+                    <div className="table-card" style={{ marginTop: '1rem' }}>
+                      <table className="perf-table">
+                        <thead>
+                          <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Pro Status</th>
+                            <th>Account Status</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminUsers.map(u => (
+                            <tr key={u.username}>
+                              <td style={{ fontWeight: '500' }}>@{u.username}</td>
+                              <td>{u.role.toUpperCase()}</td>
+                              <td>
+                                {u.is_pro ? (
+                                  <span style={{ color: 'var(--success)', fontWeight: '500' }}>Active PRO</span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)' }}>Free</span>
+                                )}
+                              </td>
+                              <td>
+                                {u.is_suspended ? <span style={{ color: 'var(--danger)', fontWeight: '500' }}>Suspended</span> : <span style={{ color: 'var(--success)' }}>Active</span>}
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button onClick={() => handleAdminAction(u.is_pro ? 'revoke_pro' : 'grant_pro', u.username)} className={u.is_pro ? 'btn-secondary' : 'btn-primary'} style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>
+                                    {u.is_pro ? 'Revoke PRO' : 'Grant PRO'}
+                                  </button>
+                                  <button onClick={() => handleAdminAction(u.is_suspended ? 'unsuspend' : 'suspend', u.username)} className="btn-secondary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', color: u.is_suspended ? 'var(--success)' : 'var(--warning)' }}>
+                                    {u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {adminUsers.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center' }}>No users found</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                  
+                  <section className="editor-card">
+                    <h2 className="card-title" style={{ color: 'var(--danger)' }}><Trash2 size={18} /> Reported Profiles</h2>
+                    <div className="table-card" style={{ marginTop: '1rem' }}>
+                      <table className="perf-table">
+                        <thead>
+                          <tr>
+                            <th>Reported Username</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminReports.map(r => (
+                            <tr key={r.id}>
+                              <td style={{ fontWeight: '500' }}>@{r.reported_username}</td>
+                              <td>{r.reason}</td>
+                              <td>
+                                {r.status === 'resolved' ? (
+                                  <span style={{ color: 'var(--success)' }}>Resolved</span>
+                                ) : (
+                                  <span style={{ color: 'var(--warning)' }}>Pending</span>
+                                )}
+                              </td>
+                              <td>
+                                {r.status !== 'resolved' && (
+                                  <button onClick={() => handleResolveReport(r.id)} className="btn-primary" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>
+                                    Resolve
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {adminReports.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center' }}>No reports found</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </>
+              )}
+
             </div>
 
             {/* Right: Phone preview */}
@@ -1185,6 +1333,14 @@ export default function CreatorDashboard({ username, onLogout }) {
         </main>
 
       </div>
+
+      {mediaTarget && (
+        <MediaManager 
+          username={username} 
+          onSelectImage={handleMediaSelect} 
+          onClose={() => setMediaTarget(null)} 
+        />
+      )}
     </div>
   );
 }
