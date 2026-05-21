@@ -2,8 +2,13 @@
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    is_premium INTEGER DEFAULT 0,
+    email TEXT UNIQUE,
+    google_id TEXT UNIQUE,
+    password_hash TEXT,
+    role TEXT DEFAULT 'user',
+    pro_status TEXT DEFAULT 'none',
+    account_status TEXT DEFAULT 'active',
+    suspension_reason TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -69,10 +74,27 @@ CREATE TABLE IF NOT EXISTS analytics_clicks (
     user_agent TEXT
 );
 
+-- Profile Reports Table
+CREATE TABLE IF NOT EXISTS profile_reports (
+    id TEXT PRIMARY KEY,
+    reported_username TEXT REFERENCES profiles(username) ON DELETE CASCADE,
+    reporter_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    reason TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for Scalability
+CREATE INDEX IF NOT EXISTS idx_links_username ON links(username);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON profile_reports(status);
+CREATE INDEX IF NOT EXISTS idx_analytics_views_username ON analytics_views(username);
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+
 -- Seed Initial Demo Data
-INSERT OR IGNORE INTO users (id, username, password_hash, is_premium) VALUES 
-('u1', 'creator1', 'password123', 1),
-('u2', 'demo', 'password123', 0);
+INSERT OR IGNORE INTO users (id, username, password_hash, pro_status, role) VALUES 
+('u1', 'creator1', 'password123', 'approved', 'user'),
+('u2', 'demo', 'password123', 'none', 'user'),
+('u3', 'admin', 'admin123', 'approved', 'admin');
 
 INSERT OR IGNORE INTO profiles (username, name, bio, avatar_url, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES 
 ('creator1', 'Alex Rivers', 'Digital Creator & Tech Reviewer. Sharing my favorite gear, templates, and courses.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80', 'gradient', 'linear-gradient(135deg, #1e1b4b, #311042)', 'Outfit', 'glassmorphic', 'rgba(255, 255, 255, 0.1)', '#ffffff', 'rgba(255, 255, 255, 0.2)'),
