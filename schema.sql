@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
-    username TEXT PRIMARY KEY REFERENCES users(username) ON DELETE CASCADE,
+    username TEXT PRIMARY KEY,
     name TEXT,
     bio TEXT,
     avatar_url TEXT,
@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS profiles (
     seo_title TEXT,
     seo_description TEXT,
     allow_indexing INTEGER DEFAULT 1,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 
 -- Links Table
