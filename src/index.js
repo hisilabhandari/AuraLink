@@ -3,6 +3,15 @@ import { cors } from 'hono/cors';
 
 const app = new Hono();
 
+// Helper to hash passwords using Web Crypto API
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode('auralink_salt_' + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Enable CORS
 app.use('/api/*', cors());
 
@@ -31,11 +40,12 @@ app.post('/api/auth/register', async (c) => {
     }
 
     const userId = crypto.randomUUID();
+    const hashedPassword = await hashPassword(password);
     
-    // Insert user and default profile inside a D1 batch transaction (or sequential runs)
+    // Insert user and default profile
     await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO users (id, username, password_hash, is_premium) VALUES (?, ?, ?, 0)')
-        .bind(userId, cleanUsername, password),
+      c.env.DB.prepare("INSERT INTO users (id, username, password_hash, role, pro_status, account_status) VALUES (?, ?, ?, 'user', 'none', 'active')")
+        .bind(userId, cleanUsername, hashedPassword),
       c.env.DB.prepare('INSERT INTO profiles (username, name, bio, avatar_url, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .bind(
           cleanUsername,
@@ -56,7 +66,7 @@ app.post('/api/auth/register', async (c) => {
 
     return c.json({
       message: 'User registered successfully',
-      user: { username: cleanUsername, isPremium: false }
+      user: { username: cleanUsername, role: 'user', proStatus: 'none', accountStatus: 'active' }
     }, 201);
 
   } catch (err) {
@@ -75,20 +85,70 @@ app.post('/api/auth/login', async (c) => {
   const cleanUsername = username.trim().toLowerCase();
 
   try {
-    const user = await c.env.DB.prepare('SELECT username, password_hash, is_premium FROM users WHERE username = ?')
+    const user = await c.env.DB.prepare('SELECT username, password_hash, role, pro_status, account_status FROM users WHERE username = ?')
       .bind(cleanUsername)
       .first();
 
-    if (!user || user.password_hash !== password) {
+    const hashedPassword = await hashPassword(password);
+
+    if (!user || user.password_hash !== hashedPassword) {
       return c.json({ error: 'Invalid username or password' }, 401);
+    }
+    
+    if (user.account_status === 'suspended') {
+      return c.json({ error: 'This account is suspended' }, 403);
     }
 
     return c.json({
       message: 'Login successful',
-      user: { username: user.username, isPremium: Boolean(user.is_premium) }
+      user: { username: user.username, role: user.role, proStatus: user.pro_status }
     });
   } catch (err) {
     return c.json({ error: 'Database query error' }, 500);
+  }
+});
+
+// Google OAuth Login / Signup
+app.post('/api/auth/google', async (c) => {
+  const { credential } = await c.req.json();
+  if (!credential) return c.json({ error: 'Missing credential' }, 400);
+
+  try {
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!response.ok) return c.json({ error: 'Invalid Google token' }, 401);
+    const googleUser = await response.json();
+    
+    const email = googleUser.email;
+    const googleId = googleUser.sub;
+    const name = googleUser.name;
+    const defaultUsername = email.split('@')[0] + Math.floor(Math.random() * 1000);
+
+    let user = await c.env.DB.prepare('SELECT username, role, pro_status, account_status FROM users WHERE google_id = ? OR email = ?')
+      .bind(googleId, email).first();
+
+    if (!user) {
+      // New Google User
+      const userId = crypto.randomUUID();
+      await c.env.DB.batch([
+        c.env.DB.prepare("INSERT INTO users (id, username, email, google_id, password_hash, role, pro_status, account_status) VALUES (?, ?, ?, ?, 'oauth_user', 'user', 'none', 'active')")
+          .bind(userId, defaultUsername, email, googleId),
+        c.env.DB.prepare("INSERT INTO profiles (username, name, bio, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES (?, ?, ?, 'gradient', 'linear-gradient(135deg, #0f172a, #1e293b)', 'Inter', 'solid', '#3b82f6', '#ffffff', 'transparent')")
+          .bind(defaultUsername, name, 'Welcome to my new link page!')
+      ]);
+      user = { username: defaultUsername, role: 'user', pro_status: 'none', account_status: 'active' };
+    }
+
+    if (user.account_status === 'suspended') {
+      return c.json({ error: 'This account is suspended' }, 403);
+    }
+
+    return c.json({
+      message: 'Login successful',
+      user: { username: user.username, role: user.role, proStatus: user.pro_status }
+    });
+  } catch (err) {
+    console.error(err);
+    return c.json({ error: 'Google auth failed' }, 500);
   }
 });
 
@@ -112,13 +172,22 @@ app.get('/api/profile/:username', async (c) => {
   const cleanUsername = c.req.param('username').trim().toLowerCase();
 
   try {
-    const profile = await c.env.DB.prepare('SELECT * FROM profiles WHERE username = ?')
-      .bind(cleanUsername)
-      .first();
+    const profileData = await c.env.DB.prepare(`
+      SELECT p.*, u.account_status 
+      FROM profiles p 
+      JOIN users u ON p.username = u.username 
+      WHERE p.username = ?
+    `).bind(cleanUsername).first();
 
-    if (!profile) {
+    if (!profileData) {
       return c.json({ error: 'Profile not found' }, 404);
     }
+    
+    if (profileData.account_status === 'suspended') {
+      return c.json({ error: 'This profile has been suspended.', isSuspended: true }, 403);
+    }
+    
+    const profile = profileData;
 
     // Get active links ordered by display_order
     const { results: links } = await c.env.DB.prepare('SELECT id, title, url, is_active, button_style, button_color, button_text_color, button_border_color, button_border_radius, show_url, image_url, icon_name, link_type, price, currency FROM links WHERE username = ? ORDER BY display_order ASC')
@@ -311,27 +380,95 @@ app.put('/api/profile/:username', async (c) => {
   }
 });
 
-// Toggle Premium Helper
-app.post('/api/profile/:username/toggle-premium', async (c) => {
+// Request Pro Status
+app.post('/api/profile/:username/request-pro', async (c) => {
   const cleanUsername = c.req.param('username').trim().toLowerCase();
+  try {
+    await c.env.DB.prepare("UPDATE users SET pro_status = 'pending' WHERE username = ? AND pro_status = 'none'")
+      .bind(cleanUsername)
+      .run();
+    return c.json({ message: 'Pro status requested' });
+  } catch (err) {
+    return c.json({ error: 'Error requesting pro' }, 500);
+  }
+});
+
+// Report a profile
+app.post('/api/report', async (c) => {
+  const { reportedUsername, reason, reporterId } = await c.req.json();
+  if (!reportedUsername || !reason) return c.json({ error: 'Missing fields' }, 400);
 
   try {
-    const user = await c.env.DB.prepare('SELECT is_premium FROM users WHERE username = ?')
-      .bind(cleanUsername)
-      .first();
-
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    const nextPremiumStatus = user.is_premium === 1 ? 0 : 1;
-    await c.env.DB.prepare('UPDATE users SET is_premium = ? WHERE username = ?')
-      .bind(nextPremiumStatus, cleanUsername)
+    await c.env.DB.prepare("INSERT INTO profile_reports (id, reported_username, reporter_id, reason, status) VALUES (?, ?, ?, ?, 'pending')")
+      .bind(crypto.randomUUID(), reportedUsername, reporterId || null, reason)
       .run();
-
-    return c.json({ message: 'Premium status updated', isPremium: Boolean(nextPremiumStatus) });
+    return c.json({ message: 'Report submitted successfully' }, 201);
   } catch (err) {
-    return c.json({ error: 'Error toggling premium status' }, 500);
+    console.error(err);
+    return c.json({ error: 'Failed to submit report' }, 500);
+  }
+});
+
+// --- ADMIN ROUTES ---
+
+// Get all users
+app.get('/api/admin/users', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT id, username, email, role, pro_status, account_status, created_at FROM users ORDER BY created_at DESC").all();
+    return c.json(results);
+  } catch (err) {
+    return c.json({ error: 'Failed to fetch users' }, 500);
+  }
+});
+
+// Approve/Reject Pro
+app.post('/api/admin/approve-pro/:username', async (c) => {
+  const cleanUsername = c.req.param('username').trim().toLowerCase();
+  const { status } = await c.req.json(); // 'approved' or 'none'
+  try {
+    await c.env.DB.prepare("UPDATE users SET pro_status = ? WHERE username = ?")
+      .bind(status, cleanUsername)
+      .run();
+    return c.json({ message: `Pro status updated to ${status}` });
+  } catch (err) {
+    return c.json({ error: 'Failed to update pro status' }, 500);
+  }
+});
+
+// Suspend user
+app.post('/api/admin/suspend-user/:username', async (c) => {
+  const cleanUsername = c.req.param('username').trim().toLowerCase();
+  const { status, reason } = await c.req.json(); // 'active' or 'suspended'
+  try {
+    await c.env.DB.prepare("UPDATE users SET account_status = ?, suspension_reason = ? WHERE username = ?")
+      .bind(status, reason || null, cleanUsername)
+      .run();
+    return c.json({ message: `Account status updated to ${status}` });
+  } catch (err) {
+    return c.json({ error: 'Failed to update account status' }, 500);
+  }
+});
+
+// Get reports
+app.get('/api/admin/reports', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare("SELECT * FROM profile_reports ORDER BY created_at DESC").all();
+    return c.json(results);
+  } catch (err) {
+    return c.json({ error: 'Failed to fetch reports' }, 500);
+  }
+});
+
+// Update report status
+app.post('/api/admin/reports/:id', async (c) => {
+  const { status } = await c.req.json();
+  try {
+    await c.env.DB.prepare("UPDATE profile_reports SET status = ? WHERE id = ?")
+      .bind(status, c.req.param('id'))
+      .run();
+    return c.json({ message: 'Report updated' });
+  } catch (err) {
+    return c.json({ error: 'Failed to update report' }, 500);
   }
 });
 

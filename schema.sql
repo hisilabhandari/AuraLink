@@ -92,9 +92,9 @@ CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
 -- Seed Initial Demo Data
 INSERT OR IGNORE INTO users (id, username, password_hash, pro_status, role) VALUES 
-('u1', 'creator1', 'password123', 'approved', 'user'),
-('u2', 'demo', 'password123', 'none', 'user'),
-('u3', 'admin', 'admin123', 'approved', 'admin');
+('u1', 'creator1', 'f472823f419e3a9921969bea8c34d61f9be02eca576600728508992ee7df16e1', 'approved', 'user'),
+('u2', 'demo', 'f472823f419e3a9921969bea8c34d61f9be02eca576600728508992ee7df16e1', 'none', 'user'),
+('u3', 'admin', '3482ddd3a33b95f3392351da63c4fbc2301825445ce189e1111149d66cac46a8', 'approved', 'admin');
 
 INSERT OR IGNORE INTO profiles (username, name, bio, avatar_url, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES 
 ('creator1', 'Alex Rivers', 'Digital Creator & Tech Reviewer. Sharing my favorite gear, templates, and courses.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80', 'gradient', 'linear-gradient(135deg, #1e1b4b, #311042)', 'Outfit', 'glassmorphic', 'rgba(255, 255, 255, 0.1)', '#ffffff', 'rgba(255, 255, 255, 0.2)'),

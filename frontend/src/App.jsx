@@ -3,10 +3,12 @@ import LandingPage from './components/LandingPage';
 import AuthForm from './components/AuthForm';
 import CreatorDashboard from './components/CreatorDashboard';
 import PublicBioPage from './components/PublicBioPage';
+import AdminDashboard from './components/AdminDashboard';
 
 export default function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#');
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState('user');
 
   // Sync state on hash change
   useEffect(() => {
@@ -22,6 +24,7 @@ export default function App() {
       try {
         const userObj = JSON.parse(cachedUser);
         setUser(userObj.username);
+        setRole(userObj.role || 'user');
       } catch (e) {
         localStorage.removeItem('auralink_user');
       }
@@ -38,8 +41,15 @@ export default function App() {
   };
 
   const handleAuthSuccess = (username) => {
+    const cachedUser = localStorage.getItem('auralink_user');
+    let currentRole = 'user';
+    if (cachedUser) {
+      currentRole = JSON.parse(cachedUser).role || 'user';
+    }
     setUser(username);
-    navigateTo('#dashboard');
+    setRole(currentRole);
+    if (currentRole === 'admin') navigateTo('#admin');
+    else navigateTo('#dashboard');
   };
 
   const handleLogout = () => {
@@ -81,6 +91,17 @@ export default function App() {
       return (
         <CreatorDashboard 
           username={user} 
+          onLogout={handleLogout} 
+        />
+      );
+      
+    case '#admin':
+      if (!user || role !== 'admin') {
+        window.location.hash = '#auth';
+        return null;
+      }
+      return (
+        <AdminDashboard 
           onLogout={handleLogout} 
         />
       );

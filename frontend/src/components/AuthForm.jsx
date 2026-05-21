@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link2, ShieldCheck, Mail, Lock, User, Sparkles } from 'lucide-react';
 
 const API_BASE = '/api';
@@ -9,6 +9,47 @@ export default function AuthForm({ onAuthSuccess, onBackToHome }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const googleButtonRef = useRef(null);
+
+  const handleGoogleCallback = async (response) => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Google auth failed');
+      
+      localStorage.setItem('auralink_user', JSON.stringify(data.user));
+      onAuthSuccess(data.user.username);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with real ID
+        callback: handleGoogleCallback,
+        context: isLogin ? 'signin' : 'signup'
+      });
+      
+      if (googleButtonRef.current) {
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'filled_black',
+          size: 'large',
+          width: '100%',
+          text: isLogin ? 'signin_with' : 'signup_with'
+        });
+      }
+    }
+  }, [isLogin]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -102,6 +143,14 @@ export default function AuthForm({ onAuthSuccess, onBackToHome }) {
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Free Page'}
           </button>
         </form>
+
+        <div style={{ margin: '1.5rem 0', display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+          <span style={{ padding: '0 1rem', fontSize: '0.85rem' }}>OR</span>
+          <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+        </div>
+
+        <div ref={googleButtonRef} style={{ display: 'flex', justifyContent: 'center', width: '100%' }}></div>
 
         <div className="auth-toggle">
           {isLogin ? (

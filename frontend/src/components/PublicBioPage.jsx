@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link2, User, RefreshCw } from 'lucide-react';
+import { Link2, User, RefreshCw, Flag } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
 
@@ -10,6 +10,36 @@ export default function PublicBioPage({ username }) {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Report Modal State
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportStatus, setReportStatus] = useState('');
+
+  const handleReport = async () => {
+    if (!reportReason) return;
+    setReportStatus('submitting');
+    try {
+      const loggedInUser = JSON.parse(localStorage.getItem('auralink_user'));
+      await fetch(`${API_BASE}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportedUsername: username,
+          reason: reportReason,
+          reporterId: loggedInUser?.username || null
+        })
+      });
+      setReportStatus('success');
+      setTimeout(() => {
+        setReportOpen(false);
+        setReportStatus('');
+        setReportReason('');
+      }, 2000);
+    } catch(err) {
+      setReportStatus('error');
+    }
+  };
 
   // Dynamically load Google Analytics if ID is provided
   useEffect(() => {
@@ -225,15 +255,50 @@ export default function PublicBioPage({ username }) {
             })}
           </div>
 
-          {/* Brand stamp */}
-          {!isPastelTheme && (
-            <div className="branding-tag" style={{ color: 'rgba(255,255,255,0.4)', marginTop: '4rem' }}>
-              <Link2 size={12} /> Powered by <a href="#" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
-            </div>
-          )}
+          {/* Brand stamp & Report link */}
+          <div className="branding-tag" style={{ color: 'rgba(255,255,255,0.4)', marginTop: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
+            {!isPastelTheme && (
+              <div>
+                <Link2 size={12} /> Powered by <a href="#" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
+              </div>
+            )}
+            <button 
+              onClick={() => setReportOpen(true)}
+              style={{ background: 'transparent', border: 'none', color: 'inherit', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', opacity: 0.7 }}
+            >
+              <Flag size={10} /> Report this profile
+            </button>
+          </div>
 
         </div>
       </div>
+
+      {/* Report Modal */}
+      {reportOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: '#1e293b', padding: '2rem', borderRadius: '12px', width: '90%', maxWidth: '400px', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
+            <h3 style={{ margin: '0 0 1rem 0' }}>Report Profile</h3>
+            {reportStatus === 'success' ? (
+              <p style={{ color: '#4ade80' }}>Report submitted successfully. Our team will review it.</p>
+            ) : (
+              <>
+                <textarea 
+                  value={reportReason} 
+                  onChange={e => setReportReason(e.target.value)} 
+                  placeholder="Why are you reporting this profile? Please provide details."
+                  style={{ width: '100%', height: '100px', background: '#0f172a', border: '1px solid #334155', color: '#fff', padding: '0.5rem', borderRadius: '4px', marginBottom: '1rem', resize: 'vertical' }}
+                />
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setReportOpen(false)} style={{ background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer', padding: '0.5rem' }}>Cancel</button>
+                  <button onClick={handleReport} disabled={reportStatus === 'submitting' || !reportReason} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', opacity: (reportStatus === 'submitting' || !reportReason) ? 0.5 : 1 }}>
+                    {reportStatus === 'submitting' ? 'Submitting...' : 'Submit Report'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
