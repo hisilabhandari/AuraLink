@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Link2, BarChart3, Palette, User, Plus, Trash2, Save, 
-  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings, Shield, Image as ImageIcon
+import {
+  Link2, BarChart3, Palette, User, Plus, Trash2, Save,
+  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
 import MediaManager from './MediaManager';
@@ -17,18 +17,15 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  
+
   // Admin states
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminReports, setAdminReports] = useState([]);
-  
+
   // Link form states
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [expandedLinkId, setExpandedLinkId] = useState(null);
-
-  // Media Manager state
-  const [mediaTarget, setMediaTarget] = useState(null);
 
   const handleUpdateLinkStyle = (linkId, key, value) => {
     const updatedLinks = profile.links.map(l => {
@@ -52,7 +49,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
     } else if (mediaTarget.type === 'link') {
       handleUpdateLinkStyle(mediaTarget.id, 'imageUrl', url);
     }
-    
+
     setMediaTarget(null);
   };
 
@@ -65,13 +62,13 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
         const profData = await profRes.json();
         setProfile(profData);
       }
-      
+
       const analRes = await fetch(`${API_BASE}/analytics/report/${username}`);
       if (analRes.ok) {
         const analData = await analRes.json();
         setAnalytics(analData);
       }
-      
+
       // Admin data fetch
       if (isAdmin) {
         const [usersRes, reportsRes] = await Promise.all([
@@ -81,7 +78,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
         if (usersRes.ok) setAdminUsers(await usersRes.json());
         if (reportsRes.ok) setAdminReports(await reportsRes.json());
       }
-      
+
       // Get user premium info from localStorage (simulated session)
       const cachedUser = localStorage.getItem('auralink_user');
       if (cachedUser) {
@@ -445,8 +442,9 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
   return (
     <div className="app-container">
+      {mediaTarget && <MediaManager onSelect={handleMediaSelect} onClose={() => setMediaTarget(null)} />}
       <div className="dashboard-layout">
-        
+
         {/* Sidebar Nav */}
         <aside className="sidebar">
           <div className="sidebar-top">
@@ -454,34 +452,34 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
               <Link2 size={24} />
               <span>AuraLink</span>
             </div>
-            
+
             <nav className="sidebar-menu">
-              <button 
+              <button
                 onClick={() => setActiveTab('links')}
                 className={`sidebar-item ${activeTab === 'links' ? 'active' : ''}`}
               >
                 <User size={18} />
                 <span>Page Profile</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setActiveTab('design')}
                 className={`sidebar-item ${activeTab === 'design' ? 'active' : ''}`}
               >
                 <Palette size={18} />
                 <span>Theme Design</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setActiveTab('analytics')}
                 className={`sidebar-item ${activeTab === 'analytics' ? 'active' : ''}`}
               >
                 <BarChart3 size={18} />
                 <span>Analytics</span>
               </button>
-              
+
               {isAdmin && (
-                <button 
+                <button
                   onClick={() => setActiveTab('admin')}
                   className={`sidebar-item ${activeTab === 'admin' ? 'active' : ''}`}
                   style={{ marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}
@@ -492,13 +490,13 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
               )}
             </nav>
           </div>
-          
+
           <div className="sidebar-bottom">
             <div className="sidebar-item" onClick={handleTogglePremium} style={{ color: isPremium ? 'var(--success)' : 'var(--warning)', cursor: 'pointer', marginBottom: '1rem', border: '1px dashed var(--border-light)' }}>
               <Sparkles size={16} />
               <span>{isPremium ? 'Premium Active' : 'Upgrade to Pro'}</span>
             </div>
-            
+
             <div className="sidebar-user">
               <div className="user-info">
                 <span className="username">@{username}</span>
@@ -514,10 +512,10 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
         {/* Content Pane */}
         <main className="workspace-content">
           <div className="splitscreen">
-            
+
             {/* Left: Editor form */}
             <div className="editor-pane">
-              
+
               {/* Header Info */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -529,9 +527,9 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                   </p>
                 </div>
                 <div>
-                  <button 
-                    onClick={() => handleSave()} 
-                    disabled={saving} 
+                  <button
+                    onClick={() => handleSave()}
+                    disabled={saving}
                     className="btn btn-primary"
                   >
                     <Save size={16} /> {saving ? 'Saving...' : 'Save Page'}
@@ -545,32 +543,32 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                   {/* Profile Info */}
                   <section className="editor-card">
                     <h2 className="card-title"><User size={18} /> Profile Bio Details</h2>
-                    
+
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                      <label>Avatar Photo (Upload to Cloudflare R2)</label>
+                      <label>Avatar Photo</label>
                       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.4rem' }}>
                         {profile.avatarUrl ? (
                           <img src={profile.avatarUrl} alt="Avatar Preview" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-light)' }} />
                         ) : (
                           <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px dashed var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>No Pic</div>
                         )}
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setMediaTarget({ type: 'avatar' })}
-                          className="btn btn-secondary" 
+                          className="btn btn-secondary"
                           style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', margin: 0, cursor: 'pointer' }}
                         >
                           <ImageIcon size={14} style={{ marginRight: '0.3rem', display: 'inline', verticalAlign: 'text-bottom' }} /> Choose Image
                         </button>
                         {profile.avatarUrl && (
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => {
                               const updatedProfile = { ...profile, avatarUrl: '' };
                               setProfile(updatedProfile);
                               handleSave(updatedProfile);
                             }}
-                            className="btn-text" 
+                            className="btn-text"
                             style={{ color: 'var(--danger)', fontSize: '0.8rem' }}
                           >
                             Remove
@@ -578,38 +576,38 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Display Name</label>
-                      <input 
-                        type="text" 
-                        value={profile.name} 
+                      <input
+                        type="text"
+                        value={profile.name}
                         onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                        className="input-control" 
+                        className="input-control"
                         placeholder="Alex Rivers"
                         maxLength={40}
                       />
                     </div>
-                    
+
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Google Analytics Measurement ID (gtag.js)</label>
-                      <input 
-                        type="text" 
-                        value={profile.googleAnalyticsId || ''} 
+                      <input
+                        type="text"
+                        value={profile.googleAnalyticsId || ''}
                         onChange={(e) => setProfile({ ...profile, googleAnalyticsId: e.target.value })}
                         onBlur={() => handleSave()}
-                        className="input-control" 
+                        className="input-control"
                         placeholder="e.g. G-XXXXXXXXXX"
                         maxLength={20}
                       />
                     </div>
-                    
+
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Short Biography</label>
-                      <textarea 
-                        value={profile.bio} 
+                      <textarea
+                        value={profile.bio}
                         onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                        className="input-control" 
+                        className="input-control"
                         placeholder="Share a short bio (social handles, products, info...)"
                         rows={3}
                         maxLength={180}
@@ -619,33 +617,33 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label style={{ fontWeight: '600' }}>SEO Settings</label>
-                      <input 
-                        type="text" 
-                        value={profile.seo?.title || ''} 
+                      <input
+                        type="text"
+                        value={profile.seo?.title || ''}
                         onChange={(e) => {
                           const updated = { ...profile, seo: { ...profile.seo, title: e.target.value } };
                           setProfile(updated);
                         }}
                         onBlur={() => handleSave()}
-                        className="input-control" 
+                        className="input-control"
                         placeholder="SEO Meta Title"
                         style={{ marginBottom: '0.5rem' }}
                       />
-                      <textarea 
-                        value={profile.seo?.description || ''} 
+                      <textarea
+                        value={profile.seo?.description || ''}
                         onChange={(e) => {
                           const updated = { ...profile, seo: { ...profile.seo, description: e.target.value } };
                           setProfile(updated);
                         }}
                         onBlur={() => handleSave()}
-                        className="input-control" 
+                        className="input-control"
                         placeholder="SEO Meta Description"
                         rows={2}
                         style={{ marginBottom: '0.5rem', resize: 'none' }}
                       />
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={profile.seo?.allowIndexing !== false}
                           onChange={(e) => {
                             const updated = { ...profile, seo: { ...profile.seo, allowIndexing: e.target.checked } };
@@ -664,28 +662,28 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     <form onSubmit={handleAddLink} style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
                       <div className="form-group">
                         <label>Link Display Title</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={newTitle}
                           onChange={(e) => setNewTitle(e.target.value)}
-                          className="input-control" 
+                          className="input-control"
                           placeholder="e.g. 🛍️ Visit My Storefront"
                           required
                         />
                       </div>
-                      
+
                       <div className="form-group">
                         <label>Target URL</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={newUrl}
                           onChange={(e) => setNewUrl(e.target.value)}
-                          className="input-control" 
+                          className="input-control"
                           placeholder="e.g. https://my-affiliate-shop.com/discount"
                           required
                         />
                       </div>
-                      
+
                       <button type="submit" className="btn btn-secondary" style={{ width: 'fit-content' }}>
                         <Plus size={16} /> Add to List
                       </button>
@@ -695,7 +693,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                   {/* Active Links List */}
                   <section className="editor-card">
                     <h2 className="card-title"><Link2 size={18} /> Manage Active Links</h2>
-                    
+
                     {profile.links.length === 0 ? (
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
                         No links added yet. Use the form above to add your first link!
@@ -708,16 +706,16 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                               <span className="link-drag-handle">🔗 Link Edit</span>
                               <div className="link-actions">
                                 <label className="switch">
-                                  <input 
-                                    type="checkbox" 
+                                  <input
+                                    type="checkbox"
                                     checked={link.active}
-                                    onChange={() => handleToggleLink(link.id)} 
+                                    onChange={() => handleToggleLink(link.id)}
                                   />
                                   <span className="slider"></span>
                                 </label>
-                                <button 
-                                  onClick={() => handleDeleteLink(link.id)} 
-                                  className="btn-text" 
+                                <button
+                                  onClick={() => handleDeleteLink(link.id)}
+                                  className="btn-text"
                                   style={{ color: 'var(--danger)', padding: '0.2rem' }}
                                   title="Delete Link"
                                 >
@@ -725,121 +723,121 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                                 </button>
                               </div>
                             </div>
-                            
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '0.75rem' }}>
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 value={link.title}
                                 onChange={(e) => handleEditLinkText(link.id, 'title', e.target.value)}
                                 onBlur={() => handleSave()}
-                                className="input-control" 
+                                className="input-control"
                                 style={{ fontSize: '0.85rem', padding: '0.5rem' }}
                                 placeholder="Title"
                               />
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 value={link.url}
                                 onChange={(e) => handleEditLinkText(link.id, 'url', e.target.value)}
                                 onBlur={() => handleSave()}
-                                className="input-control" 
+                                className="input-control"
                                 style={{ fontSize: '0.85rem', padding: '0.5rem' }}
                                 placeholder="URL"
                               />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                                <button className="btn-text" onClick={() => setExpandedLinkId(expandedLinkId === link.id ? null : link.id)} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                  <Settings size={14} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {expandedLinkId === link.id ? 'Close Settings' : 'Customize Style'}
-                                </button>
-                              </div>
-                              
-                              {expandedLinkId === link.id && (
-                                <div style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                    <input type="checkbox" checked={link.showUrl} onChange={(e) => handleUpdateLinkStyle(link.id, 'showUrl', e.target.checked)} />
-                                    Show URL below title
-                                  </label>
-                                  
-                                  {isPremium && (
-                                    <div style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid var(--accent-secondary)', borderRadius: '4px' }}>
-                                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <input type="checkbox" checked={link.linkType === 'product'} onChange={(e) => handleUpdateLinkStyle(link.id, 'linkType', e.target.checked ? 'product' : 'link')} />
-                                        🛒 Sell as Product
-                                      </label>
-                                      {link.linkType === 'product' && (
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                          <input type="number" value={link.price || 0} onChange={(e) => handleUpdateLinkStyle(link.id, 'price', parseFloat(e.target.value))} onBlur={() => handleSave()} className="input-control" placeholder="Price" />
-                                          <select value={link.currency || 'USD'} onChange={(e) => handleUpdateLinkStyle(link.id, 'currency', e.target.value)} className="input-control">
-                                            <option value="USD">USD</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="GBP">GBP</option>
-                                          </select>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  
-                                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                      <label>Icon</label>
-                                      <select value={link.iconName || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'iconName', e.target.value)} className="input-control">
-                                        <option value="">None</option>
-                                        {Object.keys(AVAILABLE_ICONS).map(icon => <option key={icon} value={icon}>{icon.replace('Fa', '')}</option>)}
-                                      </select>
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                      <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        Custom Image URL
-                                        <button 
-                                          type="button" 
-                                          onClick={() => setMediaTarget({ type: 'link', id: link.id })}
-                                          style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-                                        >
-                                          <ImageIcon size={12} /> Library
-                                        </button>
-                                      </label>
-                                      <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
-                                    </div>
-                                  </div>
+                              <button className="btn-text" onClick={() => setExpandedLinkId(expandedLinkId === link.id ? null : link.id)} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <Settings size={14} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {expandedLinkId === link.id ? 'Close Settings' : 'Customize Style'}
+                              </button>
+                            </div>
 
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                    <div>
-                                      <label>Button Style</label>
-                                      <select value={link.buttonStyle || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonStyle', e.target.value)} className="input-control">
-                                        <option value="">Inherit Theme</option>
-                                        <option value="solid">Solid</option>
-                                        <option value="outline">Outline</option>
-                                        <option value="glassmorphic">Glass</option>
-                                        <option value="pill">Pill</option>
-                                        <option value="soft">Soft</option>
-                                        <option value="shadow">Retro Shadow</option>
-                                        <option value="dashed">Dashed</option>
-                                      </select>
-                                    </div>
-                                    <div>
-                                      <label>Border Radius</label>
-                                      <select value={link.buttonBorderRadius || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderRadius', e.target.value)} className="input-control">
-                                        <option value="">Inherit</option>
-                                        <option value="0px">Square 0px</option>
-                                        <option value="8px">Rounded 8px</option>
-                                        <option value="16px">Extra Rounded 16px</option>
-                                        <option value="30px">Full Pill 30px</option>
-                                      </select>
-                                    </div>
-                                    <div>
-                                      <label>Bg Color</label>
-                                      <input type="text" value={link.buttonColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
-                                    </div>
-                                    <div>
-                                      <label>Text Color</label>
-                                      <input type="text" value={link.buttonTextColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
-                                    </div>
-                                    <div style={{ gridColumn: 'span 2' }}>
-                                      <label>Border Color</label>
-                                      <input type="text" value={link.buttonBorderColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
-                                    </div>
+                            {expandedLinkId === link.id && (
+                              <div style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                  <input type="checkbox" checked={link.showUrl} onChange={(e) => handleUpdateLinkStyle(link.id, 'showUrl', e.target.checked)} />
+                                  Show URL below title
+                                </label>
+
+                                {isPremium && (
+                                  <div style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid var(--accent-secondary)', borderRadius: '4px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                      <input type="checkbox" checked={link.linkType === 'product'} onChange={(e) => handleUpdateLinkStyle(link.id, 'linkType', e.target.checked ? 'product' : 'link')} />
+                                      🛒 Sell as Product
+                                    </label>
+                                    {link.linkType === 'product' && (
+                                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input type="number" value={link.price || 0} onChange={(e) => handleUpdateLinkStyle(link.id, 'price', parseFloat(e.target.value))} onBlur={() => handleSave()} className="input-control" placeholder="Price" />
+                                        <select value={link.currency || 'USD'} onChange={(e) => handleUpdateLinkStyle(link.id, 'currency', e.target.value)} className="input-control">
+                                          <option value="USD">USD</option>
+                                          <option value="EUR">EUR</option>
+                                          <option value="GBP">GBP</option>
+                                        </select>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <label>Icon</label>
+                                    <select value={link.iconName || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'iconName', e.target.value)} className="input-control">
+                                      <option value="">None</option>
+                                      {Object.keys(AVAILABLE_ICONS).map(icon => <option key={icon} value={icon}>{icon.replace('Fa', '')}</option>)}
+                                    </select>
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      Custom Image URL
+                                      <button
+                                        type="button"
+                                        onClick={() => setMediaTarget({ type: 'link', id: link.id })}
+                                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                      >
+                                        <ImageIcon size={12} /> Library
+                                      </button>
+                                    </label>
+                                    <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
                                   </div>
                                 </div>
-                              )}
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                  <div>
+                                    <label>Button Style</label>
+                                    <select value={link.buttonStyle || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonStyle', e.target.value)} className="input-control">
+                                      <option value="">Inherit Theme</option>
+                                      <option value="solid">Solid</option>
+                                      <option value="outline">Outline</option>
+                                      <option value="glassmorphic">Glass</option>
+                                      <option value="pill">Pill</option>
+                                      <option value="soft">Soft</option>
+                                      <option value="shadow">Retro Shadow</option>
+                                      <option value="dashed">Dashed</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label>Border Radius</label>
+                                    <select value={link.buttonBorderRadius || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderRadius', e.target.value)} className="input-control">
+                                      <option value="">Inherit</option>
+                                      <option value="0px">Square 0px</option>
+                                      <option value="8px">Rounded 8px</option>
+                                      <option value="16px">Extra Rounded 16px</option>
+                                      <option value="30px">Full Pill 30px</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label>Bg Color</label>
+                                    <input type="text" value={link.buttonColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                  </div>
+                                  <div>
+                                    <label>Text Color</label>
+                                    <input type="text" value={link.buttonTextColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                  </div>
+                                  <div style={{ gridColumn: 'span 2' }}>
+                                    <label>Border Color</label>
+                                    <input type="text" value={link.buttonBorderColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -857,10 +855,10 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                       {themePresets.map((preset, idx) => {
                         const isSelected = profile.theme.backgroundValue === preset.value && profile.theme.buttonStyle === preset.btnStyle;
                         const isLocked = preset.premium && !isPremium;
-                        
+
                         return (
-                          <div 
-                            key={idx} 
+                          <div
+                            key={idx}
                             onClick={() => {
                               if (isLocked) {
                                 alert('This is a Pro Theme! Click the Upgrade button on the left sidebar to unlock.');
@@ -888,8 +886,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                                 🔒
                               </div>
                             )}
-                            <div 
-                              className="theme-preview-dot" 
+                            <div
+                              className="theme-preview-dot"
                               style={{ background: preset.value }}
                             ></div>
                             <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>{preset.name}</span>
@@ -902,13 +900,13 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                   {/* Manual Editor */}
                   <section className="editor-card">
                     <h2 className="card-title"><Palette size={18} /> Typography & Buttons</h2>
-                    
+
                     {/* Font selection */}
                     <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
                       <div style={{ flex: 1 }}>
                         <label>Font Styling</label>
-                        <select 
-                          value={profile.theme.font || 'Inter'} 
+                        <select
+                          value={profile.theme.font || 'Inter'}
                           onChange={(e) => handleUpdateTheme('font', e.target.value)}
                           className="input-control"
                         >
@@ -920,8 +918,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                       </div>
                       <div style={{ flex: 1 }}>
                         <label>Global Font Color</label>
-                        <input 
-                          type="color" 
+                        <input
+                          type="color"
                           value={profile.theme.fontColor || '#ffffff'}
                           onChange={(e) => handleUpdateTheme('fontColor', e.target.value)}
                           style={{ width: '100%', height: '40px', padding: '0', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
@@ -932,8 +930,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     {/* Button style selection */}
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Button Border Style</label>
-                      <select 
-                        value={profile.theme.buttonStyle || 'solid'} 
+                      <select
+                        value={profile.theme.buttonStyle || 'solid'}
                         onChange={(e) => {
                           const val = e.target.value;
                           let btnCol = profile.theme.buttonColor;
@@ -981,8 +979,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     <div className="form-group">
                       <label>Custom Page Color</label>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <input 
-                          type="color" 
+                        <input
+                          type="color"
                           value={profile.theme.backgroundType === 'flat' ? profile.theme.backgroundValue : '#0f172a'}
                           onChange={(e) => {
                             const updatedProfile = {
@@ -1186,7 +1184,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                       </table>
                     </div>
                   </section>
-                  
+
                   <section className="editor-card">
                     <h2 className="card-title" style={{ color: 'var(--danger)' }}><Trash2 size={18} /> Reported Profiles</h2>
                     <div className="table-card" style={{ marginTop: '1rem' }}>
@@ -1230,117 +1228,95 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
             </div>
 
-            {/* Right: Phone preview */}
+            {/* Right: Live Preview */}
             <div className="preview-pane">
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Eye size={14} /> LIVE PREVIEW (SIMULATOR)
-              </div>
-              
               <div className="phone-mockup">
-                <div className="phone-speaker"></div>
-                <div 
-                  className="phone-screen" 
-                  style={{ 
-                    background: profile.theme.backgroundValue, 
-                    fontFamily: profile.theme.font === 'monospace' ? 'Courier New, monospace' : profile.theme.font,
-                    color: profile.theme.backgroundValue.includes('#fdf2f8') ? '#4c0519' : '#ffffff' 
-                  }}
-                >
-                  
-                  {profile.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
-                  ) : (
-                    <div className="bio-avatar-placeholder">
-                      <User size={30} style={{ color: 'var(--text-muted)' }} />
-                    </div>
-                  )}
-
-                  <h2 className="bio-name">{profile.name || `@${username}`}</h2>
-                  <p className="bio-description" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.7)' : 'rgba(255,255,255,0.7)' }}>
-                    {profile.bio || 'Enter details on the left to customize...'}
-                  </p>
-
-                  <div className="bio-links-container">
-                    {profile.links.filter(l => l.active).map((link) => {
-                      const finalStyleName = link.buttonStyle || profile.theme.buttonStyle || 'solid';
-                      const buttonClass = `bio-link-button theme-${finalStyleName}-btn`;
-                      const computedStyles = {};
-                      
-                      // Theme Base styles
-                      if (finalStyleName === 'solid' || finalStyleName === 'pill' || finalStyleName === 'soft') {
-                        computedStyles.backgroundColor = profile.theme.buttonColor;
-                        computedStyles.color = profile.theme.buttonTextColor;
-                      } else if (finalStyleName === 'outline' || finalStyleName === 'dashed') {
-                        computedStyles.borderColor = profile.theme.buttonColor;
-                        computedStyles.color = profile.theme.buttonColor;
-                      }
-                      
-                      // Individual link overrides
-                      if (link.buttonColor) computedStyles.backgroundColor = link.buttonColor;
-                      if (link.buttonColor && (finalStyleName === 'outline' || finalStyleName === 'dashed')) {
-                        computedStyles.borderColor = link.buttonColor;
-                        computedStyles.color = link.buttonColor;
-                      }
-                      if (link.buttonTextColor) computedStyles.color = link.buttonTextColor;
-                      if (link.buttonBorderColor) computedStyles.borderColor = link.buttonBorderColor;
-                      if (link.buttonBorderRadius) computedStyles.borderRadius = link.buttonBorderRadius;
-
-                      const IconComponent = link.iconName && AVAILABLE_ICONS[link.iconName] ? AVAILABLE_ICONS[link.iconName] : null;
-
-                      let parsedUrlHostname = '';
-                      try {
-                        parsedUrlHostname = new URL(link.url).hostname;
-                      } catch(e) {
-                        parsedUrlHostname = link.url;
-                      }
-
-                      return (
-                        <a 
-                          key={link.id} 
-                          href={link.url}
-                          target="_blank" 
-                          rel="noreferrer"
-                          className={buttonClass}
-                          style={{...computedStyles, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {link.imageUrl && <img src={link.imageUrl} alt="icon" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
-                            {!link.imageUrl && IconComponent && <IconComponent size={20} />}
-                            <span>{link.title}</span>
-                            {link.linkType === 'product' && (
-                              <span style={{ background: 'var(--success)', color: '#000', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
-                                {link.currency === 'USD' ? '$' : link.currency === 'EUR' ? '€' : '£'}{link.price}
-                              </span>
-                            )}
-                          </div>
-                          {link.showUrl && <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.2rem' }}>{parsedUrlHostname}</span>}
-                        </a>
-                      );
-                    })}
+                {profile.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
+                ) : (
+                  <div className="bio-avatar-placeholder">
+                    <User size={30} style={{ color: 'var(--text-muted)' }} />
                   </div>
+                )}
 
-                  {!profile.theme.backgroundValue.includes('pastel') && (
-                    <div className="branding-tag" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.4)' : 'rgba(255,255,255,0.4)' }}>
-                      <Link2 size={12} /> Powered by <span>AuraLink</span>
-                    </div>
-                  )}
+                <h2 className="bio-name">{profile.name || `@${username}`}</h2>
+                <p className="bio-description" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.7)' : 'rgba(255,255,255,0.7)' }}>
+                  {profile.bio || 'Enter details on the left to customize...'}
+                </p>
 
+                <div className="bio-links-container">
+                  {profile.links.filter(l => l.active).map((link) => {
+                    const finalStyleName = link.buttonStyle || profile.theme.buttonStyle || 'solid';
+                    const buttonClass = `bio-link-button theme-${finalStyleName}-btn`;
+                    const computedStyles = {};
+
+                    // Theme Base styles
+                    if (finalStyleName === 'solid' || finalStyleName === 'pill' || finalStyleName === 'soft') {
+                      computedStyles.backgroundColor = profile.theme.buttonColor;
+                      computedStyles.color = profile.theme.buttonTextColor;
+                    } else if (finalStyleName === 'outline' || finalStyleName === 'dashed') {
+                      computedStyles.borderColor = profile.theme.buttonColor;
+                      computedStyles.color = profile.theme.buttonColor;
+                    }
+
+                    // Individual link overrides
+                    if (link.buttonColor) computedStyles.backgroundColor = link.buttonColor;
+                    if (link.buttonColor && (finalStyleName === 'outline' || finalStyleName === 'dashed')) {
+                      computedStyles.borderColor = link.buttonColor;
+                      computedStyles.color = link.buttonColor;
+                    }
+                    if (link.buttonTextColor) computedStyles.color = link.buttonTextColor;
+                    if (link.buttonBorderColor) computedStyles.borderColor = link.buttonBorderColor;
+                    if (link.buttonBorderRadius) computedStyles.borderRadius = link.buttonBorderRadius;
+
+                    const IconComponent = link.iconName && AVAILABLE_ICONS[link.iconName] ? AVAILABLE_ICONS[link.iconName] : null;
+
+                    let parsedUrlHostname = '';
+                    try {
+                      parsedUrlHostname = new URL(link.url).hostname;
+                    } catch (e) {
+                      parsedUrlHostname = link.url;
+                    }
+
+                    return (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={buttonClass}
+                        style={{ ...computedStyles, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {link.imageUrl && <img src={link.imageUrl} alt="icon" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
+                          {!link.imageUrl && IconComponent && <IconComponent size={20} />}
+                          <span>{link.title}</span>
+                          {link.linkType === 'product' && (
+                            <span style={{ background: 'var(--success)', color: '#000', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                              {link.currency === 'USD' ? '$' : link.currency === 'EUR' ? '€' : '£'}{link.price}
+                            </span>
+                          )}
+                        </div>
+                        {link.showUrl && <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.2rem' }}>{parsedUrlHostname}</span>}
+                      </a>
+                    );
+                  })}
                 </div>
+
+                {!profile.theme.backgroundValue.includes('pastel') && (
+                  <div className="branding-tag" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.4)' : 'rgba(255,255,255,0.4)' }}>
+                    <Link2 size={12} /> Powered by <span>AuraLink</span>
+                  </div>
+                )}
+
               </div>
             </div>
-
           </div>
-        </main>
 
       </div>
+    </main>
 
-      {mediaTarget && (
-        <MediaManager 
-          username={username} 
-          onSelectImage={handleMediaSelect} 
-          onClose={() => setMediaTarget(null)} 
-        />
-      )}
-    </div>
+      </div >
+    </div >
   );
 }
