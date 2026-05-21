@@ -8,10 +8,10 @@ binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "auralink-db"
-database_id = "auralink-db-uuid-local"
+database_name = "auralink"
+database_id = ""
 
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "auralink-r2"
-preview_bucket_name = "auralink-r2-preview"
+bucket_name = "auralink"
+preview_bucket_name = "auralink"
