@@ -554,7 +554,7 @@ export default function CreatorDashboard({ username, onLogout }) {
                       />
                     </div>
                     
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Short Biography</label>
                       <textarea 
                         value={profile.bio} 
@@ -565,6 +565,46 @@ export default function CreatorDashboard({ username, onLogout }) {
                         maxLength={180}
                         style={{ resize: 'none' }}
                       />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ fontWeight: '600' }}>SEO Settings</label>
+                      <input 
+                        type="text" 
+                        value={profile.seo?.title || ''} 
+                        onChange={(e) => {
+                          const updated = { ...profile, seo: { ...profile.seo, title: e.target.value } };
+                          setProfile(updated);
+                        }}
+                        onBlur={() => handleSave()}
+                        className="input-control" 
+                        placeholder="SEO Meta Title"
+                        style={{ marginBottom: '0.5rem' }}
+                      />
+                      <textarea 
+                        value={profile.seo?.description || ''} 
+                        onChange={(e) => {
+                          const updated = { ...profile, seo: { ...profile.seo, description: e.target.value } };
+                          setProfile(updated);
+                        }}
+                        onBlur={() => handleSave()}
+                        className="input-control" 
+                        placeholder="SEO Meta Description"
+                        rows={2}
+                        style={{ marginBottom: '0.5rem', resize: 'none' }}
+                      />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={profile.seo?.allowIndexing !== false}
+                          onChange={(e) => {
+                            const updated = { ...profile, seo: { ...profile.seo, allowIndexing: e.target.checked } };
+                            setProfile(updated);
+                            handleSave(updated);
+                          }}
+                        />
+                        Allow Search Engines to Index Page
+                      </label>
                     </div>
                   </section>
 
@@ -656,6 +696,91 @@ export default function CreatorDashboard({ username, onLogout }) {
                                 placeholder="URL"
                               />
                             </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                                <button className="btn-text" onClick={() => setExpandedLinkId(expandedLinkId === link.id ? null : link.id)} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                  <Settings size={14} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> {expandedLinkId === link.id ? 'Close Settings' : 'Customize Style'}
+                                </button>
+                              </div>
+                              
+                              {expandedLinkId === link.id && (
+                                <div style={{ padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '8px', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    <input type="checkbox" checked={link.showUrl} onChange={(e) => handleUpdateLinkStyle(link.id, 'showUrl', e.target.checked)} />
+                                    Show URL below title
+                                  </label>
+                                  
+                                  {isPremium && (
+                                    <div style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid var(--accent-secondary)', borderRadius: '4px' }}>
+                                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <input type="checkbox" checked={link.linkType === 'product'} onChange={(e) => handleUpdateLinkStyle(link.id, 'linkType', e.target.checked ? 'product' : 'link')} />
+                                        🛒 Sell as Product
+                                      </label>
+                                      {link.linkType === 'product' && (
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                          <input type="number" value={link.price || 0} onChange={(e) => handleUpdateLinkStyle(link.id, 'price', parseFloat(e.target.value))} onBlur={() => handleSave()} className="input-control" placeholder="Price" />
+                                          <select value={link.currency || 'USD'} onChange={(e) => handleUpdateLinkStyle(link.id, 'currency', e.target.value)} className="input-control">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                          </select>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                      <label>Icon</label>
+                                      <select value={link.iconName || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'iconName', e.target.value)} className="input-control">
+                                        <option value="">None</option>
+                                        {Object.keys(AVAILABLE_ICONS).map(icon => <option key={icon} value={icon}>{icon.replace('Fa', '')}</option>)}
+                                      </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <label>Custom Image URL</label>
+                                      <input type="text" value={link.imageUrl || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'imageUrl', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="https://..." />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div>
+                                      <label>Button Style</label>
+                                      <select value={link.buttonStyle || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonStyle', e.target.value)} className="input-control">
+                                        <option value="">Inherit Theme</option>
+                                        <option value="solid">Solid</option>
+                                        <option value="outline">Outline</option>
+                                        <option value="glassmorphic">Glass</option>
+                                        <option value="pill">Pill</option>
+                                        <option value="soft">Soft</option>
+                                        <option value="shadow">Retro Shadow</option>
+                                        <option value="dashed">Dashed</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label>Border Radius</label>
+                                      <select value={link.buttonBorderRadius || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderRadius', e.target.value)} className="input-control">
+                                        <option value="">Inherit</option>
+                                        <option value="0px">Square 0px</option>
+                                        <option value="8px">Rounded 8px</option>
+                                        <option value="16px">Extra Rounded 16px</option>
+                                        <option value="30px">Full Pill 30px</option>
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label>Bg Color</label>
+                                      <input type="text" value={link.buttonColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                    </div>
+                                    <div>
+                                      <label>Text Color</label>
+                                      <input type="text" value={link.buttonTextColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                    </div>
+                                    <div style={{ gridColumn: 'span 2' }}>
+                                      <label>Border Color</label>
+                                      <input type="text" value={link.buttonBorderColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                           </div>
                         ))}
                       </div>
@@ -720,18 +845,29 @@ export default function CreatorDashboard({ username, onLogout }) {
                     <h2 className="card-title"><Palette size={18} /> Typography & Buttons</h2>
                     
                     {/* Font selection */}
-                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                      <label>Font Styling</label>
-                      <select 
-                        value={profile.theme.font || 'Inter'} 
-                        onChange={(e) => handleUpdateTheme('font', e.target.value)}
-                        className="input-control"
-                      >
-                        <option value="Inter">Inter (Clean Sans)</option>
-                        <option value="Outfit">Outfit (Display Bold)</option>
-                        <option value="Georgia">Georgia (Serif)</option>
-                        <option value="monospace">Courier New (Monospace)</option>
-                      </select>
+                    <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label>Font Styling</label>
+                        <select 
+                          value={profile.theme.font || 'Inter'} 
+                          onChange={(e) => handleUpdateTheme('font', e.target.value)}
+                          className="input-control"
+                        >
+                          <option value="Inter">Inter (Clean Sans)</option>
+                          <option value="Outfit">Outfit (Display Bold)</option>
+                          <option value="Georgia">Georgia (Serif)</option>
+                          <option value="monospace">Courier New (Monospace)</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label>Global Font Color</label>
+                        <input 
+                          type="color" 
+                          value={profile.theme.fontColor || '#ffffff'}
+                          onChange={(e) => handleUpdateTheme('fontColor', e.target.value)}
+                          style={{ width: '100%', height: '40px', padding: '0', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                        />
+                      </div>
                     </div>
 
                     {/* Button style selection */}
@@ -978,14 +1114,36 @@ export default function CreatorDashboard({ username, onLogout }) {
 
                   <div className="bio-links-container">
                     {profile.links.filter(l => l.active).map((link) => {
-                      const buttonClass = `bio-link-button theme-${profile.theme.buttonStyle}-btn`;
+                      const finalStyleName = link.buttonStyle || profile.theme.buttonStyle || 'solid';
+                      const buttonClass = `bio-link-button theme-${finalStyleName}-btn`;
                       const computedStyles = {};
-                      if (profile.theme.buttonStyle === 'solid') {
+                      
+                      // Theme Base styles
+                      if (finalStyleName === 'solid' || finalStyleName === 'pill' || finalStyleName === 'soft') {
                         computedStyles.backgroundColor = profile.theme.buttonColor;
                         computedStyles.color = profile.theme.buttonTextColor;
-                      } else if (profile.theme.buttonStyle === 'outline') {
+                      } else if (finalStyleName === 'outline' || finalStyleName === 'dashed') {
                         computedStyles.borderColor = profile.theme.buttonColor;
                         computedStyles.color = profile.theme.buttonColor;
+                      }
+                      
+                      // Individual link overrides
+                      if (link.buttonColor) computedStyles.backgroundColor = link.buttonColor;
+                      if (link.buttonColor && (finalStyleName === 'outline' || finalStyleName === 'dashed')) {
+                        computedStyles.borderColor = link.buttonColor;
+                        computedStyles.color = link.buttonColor;
+                      }
+                      if (link.buttonTextColor) computedStyles.color = link.buttonTextColor;
+                      if (link.buttonBorderColor) computedStyles.borderColor = link.buttonBorderColor;
+                      if (link.buttonBorderRadius) computedStyles.borderRadius = link.buttonBorderRadius;
+
+                      const IconComponent = link.iconName && AVAILABLE_ICONS[link.iconName] ? AVAILABLE_ICONS[link.iconName] : null;
+
+                      let parsedUrlHostname = '';
+                      try {
+                        parsedUrlHostname = new URL(link.url).hostname;
+                      } catch(e) {
+                        parsedUrlHostname = link.url;
                       }
 
                       return (
@@ -995,9 +1153,19 @@ export default function CreatorDashboard({ username, onLogout }) {
                           target="_blank" 
                           rel="noreferrer"
                           className={buttonClass}
-                          style={computedStyles}
+                          style={{...computedStyles, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}
                         >
-                          {link.title}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {link.imageUrl && <img src={link.imageUrl} alt="icon" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
+                            {!link.imageUrl && IconComponent && <IconComponent size={20} />}
+                            <span>{link.title}</span>
+                            {link.linkType === 'product' && (
+                              <span style={{ background: 'var(--success)', color: '#000', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                {link.currency === 'USD' ? '$' : link.currency === 'EUR' ? '€' : '£'}{link.price}
+                              </span>
+                            )}
+                          </div>
+                          {link.showUrl && <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.2rem' }}>{parsedUrlHostname}</span>}
                         </a>
                       );
                     })}
