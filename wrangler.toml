@@ -9,7 +9,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "auralink"
-database_id = ""
+database_id = "ad3c6a71-a781-4df9-80f0-8fa43313804c"
 
 [[r2_buckets]]
 binding = "BUCKET"
