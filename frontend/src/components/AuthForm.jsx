@@ -35,7 +35,7 @@ export default function AuthForm({ onAuthSuccess, onBackToHome }) {
   useEffect(() => {
     if (window.google) {
       window.google.accounts.id.initialize({
-        client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with real ID
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID", // Add your ID to frontend/.env
         callback: handleGoogleCallback,
         context: isLogin ? 'signin' : 'signup'
       });
