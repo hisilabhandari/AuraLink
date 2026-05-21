@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link2, User, RefreshCw } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
 
+const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch };
 const API_BASE = '/api';
 
 export default function PublicBioPage({ username }) {
@@ -126,71 +129,111 @@ export default function PublicBioPage({ username }) {
   }
 
   const isPastelTheme = profile.theme.backgroundValue.includes('pastel') || profile.theme.backgroundValue.includes('#fdf2f8');
+  const globalFontColor = profile.theme.fontColor || (isPastelTheme ? '#4c0519' : '#ffffff');
 
   return (
-    <div 
-      className="public-profile-wrapper"
-      style={{ 
-        background: profile.theme.backgroundValue, 
-        fontFamily: profile.theme.font === 'monospace' ? 'Courier New, monospace' : profile.theme.font,
-        color: isPastelTheme ? '#4c0519' : '#ffffff' 
-      }}
-    >
-      <div className="public-profile-container">
-        
-        {/* Avatar */}
-        {profile.avatarUrl ? (
-          <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
-        ) : (
-          <div className="bio-avatar-placeholder">
-            <User size={30} style={{ color: 'var(--text-muted)' }} />
+    <>
+      <Helmet>
+        <title>{profile.seo?.title || `${profile.name}'s Links`}</title>
+        <meta name="description" content={profile.seo?.description || profile.bio} />
+        {profile.seo?.allowIndexing === false && <meta name="robots" content="noindex, nofollow" />}
+      </Helmet>
+
+      <div 
+        className="public-profile-wrapper"
+        style={{ 
+          background: profile.theme.backgroundValue, 
+          fontFamily: profile.theme.font === 'monospace' ? 'Courier New, monospace' : profile.theme.font,
+          color: globalFontColor 
+        }}
+      >
+        <div className="public-profile-container">
+          
+          {/* Avatar */}
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
+          ) : (
+            <div className="bio-avatar-placeholder">
+              <User size={30} style={{ color: 'var(--text-muted)' }} />
+            </div>
+          )}
+
+          {/* Info */}
+          <h1 className="bio-name">{profile.name}</h1>
+          <p className="bio-description" style={{ color: globalFontColor, opacity: 0.8 }}>
+            {profile.bio}
+          </p>
+
+          {/* Links list */}
+          <div className="bio-links-container">
+            {profile.links.filter(l => l.active).map((link) => {
+              const finalStyleName = link.buttonStyle || profile.theme.buttonStyle || 'solid';
+              const buttonClass = `bio-link-button theme-${finalStyleName}-btn`;
+              const computedStyles = {};
+              
+              // Theme Base styles
+              if (finalStyleName === 'solid' || finalStyleName === 'pill' || finalStyleName === 'soft') {
+                computedStyles.backgroundColor = profile.theme.buttonColor;
+                computedStyles.color = profile.theme.buttonTextColor;
+              } else if (finalStyleName === 'outline' || finalStyleName === 'dashed') {
+                computedStyles.borderColor = profile.theme.buttonColor;
+                computedStyles.color = profile.theme.buttonColor;
+              }
+              
+              // Individual link overrides
+              if (link.buttonColor) computedStyles.backgroundColor = link.buttonColor;
+              if (link.buttonColor && (finalStyleName === 'outline' || finalStyleName === 'dashed')) {
+                computedStyles.borderColor = link.buttonColor;
+                computedStyles.color = link.buttonColor;
+              }
+              if (link.buttonTextColor) computedStyles.color = link.buttonTextColor;
+              if (link.buttonBorderColor) computedStyles.borderColor = link.buttonBorderColor;
+              if (link.buttonBorderRadius) computedStyles.borderRadius = link.buttonBorderRadius;
+
+              const IconComponent = link.iconName && AVAILABLE_ICONS[link.iconName] ? AVAILABLE_ICONS[link.iconName] : null;
+
+              let parsedUrlHostname = '';
+              try {
+                parsedUrlHostname = new URL(link.url).hostname;
+              } catch(e) {
+                parsedUrlHostname = link.url;
+              }
+
+              return (
+                <a 
+                  key={link.id} 
+                  href={link.url}
+                  target="_blank" 
+                  rel="noreferrer"
+                  onClick={() => handleLinkClick(link.id)}
+                  className={buttonClass}
+                  style={{...computedStyles, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {link.imageUrl && <img src={link.imageUrl} alt="icon" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
+                    {!link.imageUrl && IconComponent && <IconComponent size={20} />}
+                    <span>{link.title}</span>
+                    {link.linkType === 'product' && (
+                      <span style={{ background: 'var(--success)', color: '#000', padding: '2px 6px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}>
+                        {link.currency === 'USD' ? '$' : link.currency === 'EUR' ? '€' : '£'}{link.price}
+                      </span>
+                    )}
+                  </div>
+                  {link.showUrl && <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.2rem' }}>{parsedUrlHostname}</span>}
+                </a>
+              );
+            })}
           </div>
-        )}
 
-        {/* Info */}
-        <h1 className="bio-name">{profile.name}</h1>
-        <p className="bio-description" style={{ color: isPastelTheme ? 'rgba(76,5,25,0.7)' : 'rgba(255,255,255,0.7)' }}>
-          {profile.bio}
-        </p>
+          {/* Brand stamp */}
+          {!isPastelTheme && (
+            <div className="branding-tag" style={{ color: 'rgba(255,255,255,0.4)', marginTop: '4rem' }}>
+              <Link2 size={12} /> Powered by <a href="#" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
+            </div>
+          )}
 
-        {/* Links list */}
-        <div className="bio-links-container">
-          {profile.links.filter(l => l.active).map((link) => {
-            const buttonClass = `bio-link-button theme-${profile.theme.buttonStyle}-btn`;
-            const computedStyles = {};
-            
-            if (profile.theme.buttonStyle === 'solid') {
-              computedStyles.backgroundColor = profile.theme.buttonColor;
-              computedStyles.color = profile.theme.buttonTextColor;
-            } else if (profile.theme.buttonStyle === 'outline') {
-              computedStyles.borderColor = profile.theme.buttonColor;
-              computedStyles.color = profile.theme.buttonColor;
-            }
-
-            return (
-              <a 
-                key={link.id} 
-                href={link.url}
-                target="_blank" 
-                rel="noreferrer"
-                onClick={() => handleLinkClick(link.id)}
-                className={buttonClass}
-                style={computedStyles}
-              >
-                {link.title}
-              </a>
-            );
-          })}
         </div>
-
-        {/* Brand stamp */}
-        {!isPastelTheme && (
-          <div className="branding-tag" style={{ color: 'rgba(255,255,255,0.4)', marginTop: '4rem' }}>
-            <Link2 size={12} /> Powered by <a href="#" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
-          </div>
-        )}
-
       </div>
-    </div>
+    </>
   );
 }
