@@ -60,13 +60,17 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const profRes = await fetch(`${API_BASE}/profile/${username}`);
+
+      const [profRes, analRes] = await Promise.all([
+        fetch(`${API_BASE}/profile/${username}`),
+        fetch(`${API_BASE}/analytics/report/${username}`)
+      ]);
+
       if (profRes.ok) {
         const profData = await profRes.json();
         setProfile(profData);
       }
       
-      const analRes = await fetch(`${API_BASE}/analytics/report/${username}`);
       if (analRes.ok) {
         const analData = await analRes.json();
         setAnalytics(analData);
@@ -1333,7 +1337,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                           style={{...computedStyles, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem'}}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {link.imageUrl && <img src={link.imageUrl} alt="icon" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
+                            {link.imageUrl && <img src={link.imageUrl} alt="icon" loading="lazy" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />}
                             {!link.imageUrl && IconComponent && <IconComponent size={20} />}
                             <span>{link.title}</span>
                             {link.linkType === 'product' && (
