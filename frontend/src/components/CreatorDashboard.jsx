@@ -512,9 +512,9 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
           </div>
           
           <div className="sidebar-bottom">
-            <div className="sidebar-item" onClick={handleTogglePremium} style={{ color: isPremium ? 'var(--success)' : 'var(--warning)', cursor: 'pointer', marginBottom: '1rem', border: '1px dashed var(--border-light)' }}>
+            <div className="sidebar-item" onClick={handleUpgradeToPro} style={{ color: proStatus === "approved" ? 'var(--success)' : 'var(--warning)', cursor: 'pointer', marginBottom: '1rem', border: '1px dashed var(--border-light)' }}>
               <Sparkles size={16} />
-              <span>{isPremium ? 'Premium Active' : 'Upgrade to Pro'}</span>
+              <span>{proStatus === "approved" ? 'Premium Active' : 'Upgrade to Pro'}</span>
             </div>
             
             <div className="sidebar-user">
@@ -783,7 +783,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                                     Show URL below title
                                   </label>
                                   
-                                  {isPremium && (
+                                  {proStatus === "approved" && (
                                     <div style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid var(--accent-secondary)', borderRadius: '4px' }}>
                                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <input type="checkbox" checked={link.linkType === 'product'} onChange={(e) => handleUpdateLinkStyle(link.id, 'linkType', e.target.checked ? 'product' : 'link')} />
@@ -880,7 +880,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     <div className="themes-grid">
                       {themePresets.map((preset, idx) => {
                         const isSelected = profile.theme.backgroundValue === preset.value && profile.theme.buttonStyle === preset.btnStyle;
-                        const isLocked = preset.premium && !isPremium;
+                        const isLocked = preset.premium && proStatus !== "approved";
                         
                         return (
                           <div 
@@ -996,8 +996,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                         <option value="soft">Soft Background</option>
                         <option value="shadow">Retro Shadow Offset</option>
                         <option value="dashed">Dashed Border</option>
-                        {isPremium && <option value="neon">Neon Digital</option>}
-                        {isPremium && <option value="pastel">Rounded Pastel</option>}
+                        {proStatus === "approved" && <option value="neon">Neon Digital</option>}
+                        {proStatus === "approved" && <option value="pastel">Rounded Pastel</option>}
                       </select>
                     </div>
 
