@@ -1191,3 +1191,35 @@ input:checked + .slider:before {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+@media screen and (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  .splitscreen {
+    flex-direction: column;
+    height: auto;
+  }
+  .editor-pane {
+    max-height: unset;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .preview-pane {
+    max-height: unset;
+    padding: 2rem 1rem;
+  }
+  .workspace-content {
+    overflow-y: visible;
+  }
+  .perf-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .analytics-grid, .charts-row {
+    grid-template-columns: 1fr;
+  }
+  .themes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}

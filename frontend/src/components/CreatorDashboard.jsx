@@ -512,9 +512,9 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
           </div>
           
           <div className="sidebar-bottom">
-            <div className="sidebar-item" onClick={handleUpgradeToPro} style={{ color: proStatus === "approved" ? 'var(--success)' : 'var(--warning)', cursor: 'pointer', marginBottom: '1rem', border: '1px dashed var(--border-light)' }}>
+            <div className="sidebar-item" onClick={handleTogglePremium} style={{ color: isPremium ? 'var(--success)' : 'var(--warning)', cursor: 'pointer', marginBottom: '1rem', border: '1px dashed var(--border-light)' }}>
               <Sparkles size={16} />
-              <span>{proStatus === "approved" ? 'Premium Active' : 'Upgrade to Pro'}</span>
+              <span>{isPremium ? 'Premium Active' : 'Upgrade to Pro'}</span>
             </div>
             
             <div className="sidebar-user">
@@ -783,7 +783,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                                     Show URL below title
                                   </label>
                                   
-                                  {proStatus === "approved" && (
+                                  {isPremium && (
                                     <div style={{ marginBottom: '1rem', padding: '0.5rem', border: '1px solid var(--accent-secondary)', borderRadius: '4px' }}>
                                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <input type="checkbox" checked={link.linkType === 'product'} onChange={(e) => handleUpdateLinkStyle(link.id, 'linkType', e.target.checked ? 'product' : 'link')} />
@@ -880,7 +880,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     <div className="themes-grid">
                       {themePresets.map((preset, idx) => {
                         const isSelected = profile.theme.backgroundValue === preset.value && profile.theme.buttonStyle === preset.btnStyle;
-                        const isLocked = preset.premium && proStatus !== "approved";
+                        const isLocked = preset.premium && !isPremium;
                         
                         return (
                           <div 
@@ -996,8 +996,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                         <option value="soft">Soft Background</option>
                         <option value="shadow">Retro Shadow Offset</option>
                         <option value="dashed">Dashed Border</option>
-                        {proStatus === "approved" && <option value="neon">Neon Digital</option>}
-                        {proStatus === "approved" && <option value="pastel">Rounded Pastel</option>}
+                        {isPremium && <option value="neon">Neon Digital</option>}
+                        {isPremium && <option value="pastel">Rounded Pastel</option>}
                       </select>
                     </div>
 
@@ -1270,9 +1270,9 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                 <div 
                   className="phone-screen" 
                   style={{ 
-                    background: profile.theme.backgroundValue, 
-                    fontFamily: profile.theme.font === 'monospace' ? 'Courier New, monospace' : profile.theme.font,
-                    color: profile.theme.backgroundValue.includes('#fdf2f8') ? '#4c0519' : '#ffffff' 
+                    background: profile.theme?.backgroundValue || '#000000',
+                    fontFamily: profile.theme?.font === 'monospace' ? 'Courier New, monospace' : profile.theme?.font,
+                    color: typeof profile.theme?.backgroundValue === 'string' && profile.theme.backgroundValue.includes('#fdf2f8') ? '#4c0519' : '#ffffff'
                   }}
                 >
                   
@@ -1285,7 +1285,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                   )}
 
                   <h2 className="bio-name">{profile.name || `@${username}`}</h2>
-                  <p className="bio-description" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.7)' : 'rgba(255,255,255,0.7)' }}>
+                  <p className="bio-description" style={{ color: typeof profile.theme?.backgroundValue === 'string' && profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.7)' : 'rgba(255,255,255,0.7)' }}>
                     {profile.bio || 'Enter details on the left to customize...'}
                   </p>
 
@@ -1348,8 +1348,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                     })}
                   </div>
 
-                  {!profile.theme.backgroundValue.includes('pastel') && (
-                    <div className="branding-tag" style={{ color: profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.4)' : 'rgba(255,255,255,0.4)' }}>
+                  {!(typeof profile.theme?.backgroundValue === 'string' && profile.theme.backgroundValue.includes('pastel')) && (
+                    <div className="branding-tag" style={{ color: typeof profile.theme?.backgroundValue === 'string' && profile.theme.backgroundValue.includes('#fdf2f8') ? 'rgba(76,5,25,0.4)' : 'rgba(255,255,255,0.4)' }}>
                       <Link2 size={12} /> Powered by <span>AuraLink</span>
                     </div>
                   )}
