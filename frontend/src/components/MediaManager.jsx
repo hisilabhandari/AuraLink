@@ -4,7 +4,7 @@ import { Image, Upload, Trash2, X, RefreshCw, CheckCircle2 } from 'lucide-react'
 
 const API_BASE = '/api';
 
-export default function MediaManager({ username, onSelectImage, onClose }) {
+export default function MediaManager({ username, isPro, onSelectImage, onClose }) {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -105,6 +105,34 @@ export default function MediaManager({ username, onSelectImage, onClose }) {
             <X size={24} />
           </button>
         </div>
+
+        {/* Storage usage meter */}
+        {(() => {
+          const totalSizeBytes = mediaFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+          const totalSizeMB = (totalSizeBytes / (1024 * 1024)).toFixed(2);
+          const limitMB = isPro ? 100 : 15;
+          const percentage = Math.min((totalSizeBytes / (limitMB * 1024 * 1024)) * 100, 100).toFixed(1);
+
+          return (
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #1e293b', background: '#0b0f19' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#94a3b8', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span>Storage Used: <strong style={{ color: '#fff' }}>{totalSizeMB} MB</strong> / {limitMB} MB ({percentage}%)</span>
+                {!isPro && (
+                  <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Upgrade to Pro for 100MB</span>
+                )}
+              </div>
+              <div style={{ width: '100%', height: '6px', background: '#1e293b', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ 
+                  width: `${percentage}%`, 
+                  height: '100%', 
+                  background: parseFloat(percentage) > 90 ? 'var(--danger)' : parseFloat(percentage) > 70 ? 'var(--warning)' : 'var(--accent-primary)',
+                  borderRadius: '3px',
+                  transition: 'width 0.3s ease'
+                }}></div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Upload Bar */}
         <div style={{ padding: '1.5rem', background: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

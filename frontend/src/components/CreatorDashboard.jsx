@@ -1576,6 +1576,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
       {mediaTarget && (
         <MediaManager 
           username={username} 
+          isPro={proStatus === 'approved'}
           onSelectImage={handleMediaSelect} 
           onClose={() => setMediaTarget(null)} 
         />
