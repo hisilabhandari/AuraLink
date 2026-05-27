@@ -131,3 +131,16 @@ INSERT OR IGNORE INTO analytics_clicks (id, username, link_id, timestamp) VALUES
 ('c5', 'creator1', 'link-2', '2026-05-21 09:20:00'),
 ('c6', 'creator1', 'link-1', '2026-05-21 10:05:00'),
 ('c7', 'creator1', 'link-4', '2026-05-21 10:35:00');
+
+-- User Media Table (To avoid R2 list Class A operations)
+CREATE TABLE IF NOT EXISTS user_media (
+    id TEXT PRIMARY KEY,
+    username TEXT REFERENCES profiles(username) ON DELETE CASCADE,
+    file_key TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    content_type TEXT,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_media_username ON user_media(username);
+

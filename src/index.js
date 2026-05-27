@@ -698,14 +698,18 @@ app.post('/api/upload', async (c) => {
       const limit = isPro ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
       const limitStr = isPro ? '100MB' : '15MB';
 
-      // Sum user's current storage space in R2
-      const prefix = `User/${username}/`;
-      const listed = await c.env.BUCKET.list({ prefix });
-      let totalSize = listed.objects.reduce((sum, obj) => sum + obj.size, 0);
+      // Sum user's current storage space in D1
+      const sizeResult = await c.env.DB.prepare('SELECT SUM(size) as totalSize FROM user_media WHERE username = ?')
+        .bind(username.trim().toLowerCase())
+        .first();
+      let totalSize = sizeResult?.totalSize || 0;
 
       // Adjust size if overwriting an existing file under the same name
       filePath = `User/${username}/${safeName}`;
-      const existingFile = listed.objects.find(obj => obj.key === filePath);
+      const existingFile = await c.env.DB.prepare('SELECT id, size FROM user_media WHERE file_key = ?')
+        .bind(filePath)
+        .first();
+      
       if (existingFile) {
         totalSize -= existingFile.size;
       }
@@ -723,6 +727,21 @@ app.post('/api/upload', async (c) => {
       httpMetadata: { contentType: file.type }
     });
 
+    // Save or update in D1 database
+    if (username) {
+      // Re-query existing file just in case it wasn't queried above
+      const existingDbFile = await c.env.DB.prepare('SELECT id FROM user_media WHERE file_key = ?').bind(filePath).first();
+      const dbId = existingDbFile ? existingDbFile.id : crypto.randomUUID();
+      
+      if (existingDbFile) {
+        await c.env.DB.prepare('UPDATE user_media SET size = ?, content_type = ?, uploaded_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .bind(file.size, file.type, dbId).run();
+      } else {
+        await c.env.DB.prepare('INSERT INTO user_media (id, username, file_key, size, content_type) VALUES (?, ?, ?, ?, ?)')
+          .bind(dbId, username.trim().toLowerCase(), filePath, file.size, file.type).run();
+      }
+    }
+
     return c.json({ url: `/images/${filePath}` });
 
   } catch (err) {
@@ -735,14 +754,16 @@ app.post('/api/upload', async (c) => {
 app.get('/api/media/:username', async (c) => {
   const username = c.req.param('username');
   try {
-    const prefix = `User/${username}/`;
-    const listed = await c.env.BUCKET.list({ prefix });
+    // Get files from D1
+    const { results } = await c.env.DB.prepare('SELECT * FROM user_media WHERE username = ? ORDER BY uploaded_at DESC')
+      .bind(username.trim().toLowerCase())
+      .all();
     
-    const files = listed.objects.map(obj => ({
-      key: obj.key,
-      url: `/images/${obj.key}`,
-      size: obj.size,
-      uploaded: obj.uploaded
+    const files = results.map(row => ({
+      key: row.file_key,
+      url: `/images/${row.file_key}`,
+      size: row.size,
+      uploaded: row.uploaded_at
     }));
 
     return c.json({ files });
@@ -758,7 +779,15 @@ app.delete('/api/media/:username/:filename', async (c) => {
   const filename = c.req.param('filename');
   try {
     const key = `User/${username}/${filename}`;
+    
+    // Delete from D1 database
+    await c.env.DB.prepare('DELETE FROM user_media WHERE file_key = ? AND username = ?')
+      .bind(key, username.trim().toLowerCase())
+      .run();
+      
+    // Delete from R2 Bucket
     await c.env.BUCKET.delete(key);
+    
     return c.json({ message: 'File deleted successfully' });
   } catch (err) {
     console.error(err);
