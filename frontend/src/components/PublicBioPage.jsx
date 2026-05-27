@@ -154,7 +154,7 @@ export default function PublicBioPage({ username }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem', background: '#070913', color: '#fff', textAlign: 'center', padding: '2rem' }}>
         <h2 style={{ fontSize: '2rem', color: 'var(--danger)' }}>404 Not Found</h2>
         <p style={{ color: 'var(--text-secondary)' }}>The AuraLink profile `@{username}` does not exist or has been removed.</p>
-        <a href="#" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Create Your Own Bio Page</a>
+        <a href="/" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Create Your Own Bio Page</a>
       </div>
     );
   }
@@ -260,7 +260,7 @@ export default function PublicBioPage({ username }) {
           <div className="branding-tag" style={{ color: 'rgba(255,255,255,0.4)', marginTop: '4rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
             {!isPastelTheme && (
               <div>
-                <Link2 size={12} /> Powered by <a href="#" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
+                <Link2 size={12} /> Powered by <a href="/" style={{ color: '#fff', textDecoration: 'underline', fontWeight: '600' }}>AuraLink</a>
               </div>
             )}
             <button 

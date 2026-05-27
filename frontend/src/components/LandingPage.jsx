@@ -13,8 +13,8 @@ export default function LandingPage({ onNavigate }) {
           <span>AuraLink</span>
         </div>
         <div className="nav-links">
-          <button onClick={() => onNavigate('#auth')} className="btn btn-secondary">Sign In</button>
-          <button onClick={() => onNavigate('#auth')} className="btn btn-primary">Get Started</button>
+          <button onClick={() => onNavigate('/auth')} className="btn btn-secondary">Sign In</button>
+          <button onClick={() => onNavigate('/auth')} className="btn btn-primary">Get Started</button>
         </div>
       </nav>
 
@@ -32,7 +32,7 @@ export default function LandingPage({ onNavigate }) {
           Build a gorgeous, personalized link page for your social bios. Track affiliate clicks, monitor views in real-time, and customize every pixel with designer themes.
         </p>
         <div className="hero-ctas">
-          <button onClick={() => onNavigate('#auth')} className="btn btn-primary">
+          <button onClick={() => onNavigate('/auth')} className="btn btn-primary">
             Create Your Page <ArrowRight size={16} />
           </button>
           <a href="#pricing" className="btn btn-secondary">View Pricing</a>
@@ -107,7 +107,7 @@ export default function LandingPage({ onNavigate }) {
               <li><Check size={16} /> Basic view count tracking</li>
               <li><Check size={16} /> AuraLink branding on page</li>
             </ul>
-            <button onClick={() => onNavigate('#auth')} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
+            <button onClick={() => onNavigate('/auth')} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }}>
               Start for Free
             </button>
           </div>
@@ -124,7 +124,7 @@ export default function LandingPage({ onNavigate }) {
               <li><Check size={16} /> Custom fonts and button shapes</li>
               <li><Check size={16} /> Remove AuraLink branding</li>
             </ul>
-            <button onClick={() => onNavigate('#auth')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+            <button onClick={() => onNavigate('/auth')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
               Go Premium Pro
             </button>
           </div>

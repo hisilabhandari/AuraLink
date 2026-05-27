@@ -790,4 +790,104 @@ app.get('/images/*', async (c) => {
   }
 });
 
+// --- SPA FALLBACK & SEO INJECTION ---
+
+// Helper: read the base index.html from the ASSETS binding
+async function getIndexHtml(env) {
+  const asset = await env.ASSETS.fetch(new Request('https://fake-host/index.html'));
+  return await asset.text();
+}
+
+// Helper: escape HTML entities for safe injection into meta tags
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// SEO-aware route for public profiles: /@username
+app.get('/@:username', async (c) => {
+  const username = c.req.param('username').trim().toLowerCase();
+  const requestUrl = new URL(c.req.url);
+  const origin = requestUrl.origin;
+
+  try {
+    let html = await getIndexHtml(c.env);
+
+    // Fetch profile data for SEO injection
+    const profileData = await c.env.DB.prepare(`
+      SELECT p.name, p.bio, p.avatar_url, p.seo_title, p.seo_description, p.allow_indexing
+      FROM profiles p
+      JOIN users u ON p.username = u.username
+      WHERE p.username = ? AND u.account_status = 'active'
+    `).bind(username).first();
+
+    if (profileData) {
+      const seoTitle = escapeHtml(profileData.seo_title || `${profileData.name} | AuraLink`);
+      const seoDesc = escapeHtml(profileData.seo_description || profileData.bio || `Check out ${profileData.name}'s links on AuraLink`);
+      const avatarUrl = profileData.avatar_url ? `${origin}${profileData.avatar_url}` : `${origin}/src/favicon.svg`;
+      const canonicalUrl = `${origin}/@${username}`;
+      const robotsMeta = profileData.allow_indexing === 0 ? `<meta name="robots" content="noindex, nofollow" />` : '';
+
+      const seoTags = `
+    <!-- SEO: Dynamic meta tags injected by server -->
+    <meta name="description" content="${seoDesc}" />
+    ${robotsMeta}
+    <link rel="canonical" href="${canonicalUrl}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content="${seoTitle}" />
+    <meta property="og:description" content="${seoDesc}" />
+    <meta property="og:image" content="${escapeHtml(avatarUrl)}" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:site_name" content="AuraLink" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="${seoTitle}" />
+    <meta name="twitter:description" content="${seoDesc}" />
+    <meta name="twitter:image" content="${escapeHtml(avatarUrl)}" />
+    `;
+
+      // Inject SEO tags into <head> and replace <title>
+      html = html.replace(/<title>[^<]*<\/title>/, `<title>${seoTitle}</title>`);
+      html = html.replace('</head>', `${seoTags}\n  </head>`);
+    }
+    // If profile not found, serve plain index.html — React will show a 404 UI
+
+    return c.html(html);
+  } catch (err) {
+    console.error('SSR meta injection error:', err);
+    // Fallback: serve plain index.html
+    try {
+      const html = await getIndexHtml(c.env);
+      return c.html(html);
+    } catch (fallbackErr) {
+      return c.text('Server Error', 500);
+    }
+  }
+});
+
+// SPA fallback: serve index.html for all other non-API, non-asset routes
+app.get('*', async (c) => {
+  const path = new URL(c.req.url).pathname;
+
+  // Skip API and image routes (already handled above)
+  if (path.startsWith('/api/') || path.startsWith('/images/')) {
+    return c.notFound();
+  }
+
+  // Skip requests for static assets (files with extensions like .js, .css, .png, etc.)
+  if (path.includes('.') && !path.endsWith('/')) {
+    return c.notFound();
+  }
+
+  try {
+    const html = await getIndexHtml(c.env);
+    return c.html(html);
+  } catch (err) {
+    return c.text('Server Error', 500);
+  }
+});
+
 export default app;

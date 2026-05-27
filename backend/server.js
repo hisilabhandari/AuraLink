@@ -385,6 +385,23 @@ app.get('/api/analytics/report/:username', (req, res) => {
   });
 });
 
+// --- SPA FALLBACK FOR LOCAL DEV ---
+// Serve static files from the frontend build directory
+const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+
+// Catch-all: serve index.html for any route not matched by API endpoints above
+// This enables clean URL routing (/auth, /dashboard, /@username) to work on page refresh
+app.get('*', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // If frontend hasn't been built yet, return a helpful message
+    res.status(503).send('Frontend not built yet. Run "npm run build" in the frontend directory first.');
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`AuraLink Backend Server running on port ${PORT}`);
 });
