@@ -1484,3 +1484,32 @@ input:checked + .slider:before {
     padding: 2rem 1rem !important;
   }
 }
+
+/* --- Pro Avatar Animation --- */
+.pro-avatar-ring {
+  position: relative;
+  display: inline-block;
+  padding: 4px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff4545,
+    #00ff99,
+    #006aff,
+    #ff0095,
+    #ff4545
+  );
+  animation: spinRing 4s linear infinite;
+}
+
+.pro-avatar-ring img,
+.pro-avatar-ring .bio-avatar-placeholder {
+  position: relative;
+  z-index: 2;
+  border: 4px solid var(--bg-primary); /* creates a gap between ring and image */
+  background: var(--bg-primary); /* fallback for transparent images */
+}
+
+@keyframes spinRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
