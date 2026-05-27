@@ -822,8 +822,13 @@ app.get('/images/*', async (c) => {
 // --- SPA FALLBACK & SEO INJECTION ---
 
 // Helper: read the base index.html from the ASSETS binding
-async function getIndexHtml(env) {
-  const asset = await env.ASSETS.fetch(new Request('https://fake-host/index.html'));
+async function getIndexHtml(c) {
+  const url = new URL(c.req.url);
+  url.pathname = '/index.html';
+  const asset = await c.env.ASSETS.fetch(new Request(url.toString()));
+  if (!asset.ok) {
+    throw new Error(`ASSETS fetch failed with status: ${asset.status}`);
+  }
   return await asset.text();
 }
 
@@ -840,7 +845,7 @@ app.get('/@:username', async (c) => {
   const origin = requestUrl.origin;
 
   try {
-    let html = await getIndexHtml(c.env);
+    let html = await getIndexHtml(c);
 
     // Fetch profile data for SEO injection
     const profileData = await c.env.DB.prepare(`
@@ -889,7 +894,7 @@ app.get('/@:username', async (c) => {
     console.error('SSR meta injection error:', err);
     // Fallback: serve plain index.html
     try {
-      const html = await getIndexHtml(c.env);
+      const html = await getIndexHtml(c);
       return c.html(html);
     } catch (fallbackErr) {
       return c.text('Server Error', 500);
@@ -908,11 +913,19 @@ app.get('*', async (c) => {
 
   // Skip requests for static assets (files with extensions like .js, .css, .png, etc.)
   if (path.includes('.') && !path.endsWith('/')) {
+    try {
+      const asset = await c.env.ASSETS.fetch(new Request(c.req.url, c.req.raw));
+      if (asset && asset.status < 400) {
+        return new Response(asset.body, asset);
+      }
+    } catch (e) {
+      // Ignore and let it fall through to 404
+    }
     return c.notFound();
   }
 
   try {
-    const html = await getIndexHtml(c.env);
+    const html = await getIndexHtml(c);
     return c.html(html);
   } catch (err) {
     return c.text('Server Error', 500);
