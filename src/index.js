@@ -161,7 +161,16 @@ app.get('/api/profile/check/:username', async (c) => {
     const user = await c.env.DB.prepare('SELECT id FROM users WHERE username = ?')
       .bind(cleanUsername)
       .first();
-    return c.json({ available: !user });
+    
+    let suggestions = [];
+    if (user) {
+      suggestions = [
+        cleanUsername + Math.floor(Math.random() * 999),
+        cleanUsername + '_',
+        cleanUsername + 'official'
+      ];
+    }
+    return c.json({ available: !user, suggestions });
   } catch (err) {
     return c.json({ error: 'Error checking username' }, 500);
   }
@@ -173,7 +182,7 @@ app.get('/api/profile/:username', async (c) => {
 
   try {
     let profileData = await c.env.DB.prepare(`
-      SELECT p.*, u.account_status 
+      SELECT p.*, u.account_status, u.pro_status 
       FROM profiles p 
       JOIN users u ON p.username = u.username 
       WHERE p.username = ?
@@ -207,7 +216,7 @@ app.get('/api/profile/:username', async (c) => {
         ]);
 
         profileData = await c.env.DB.prepare(`
-          SELECT p.*, u.account_status 
+          SELECT p.*, u.account_status, u.pro_status 
           FROM profiles p 
           JOIN users u ON p.username = u.username 
           WHERE p.username = ?
@@ -249,6 +258,7 @@ app.get('/api/profile/:username', async (c) => {
         description: profile.seo_description,
         allowIndexing: Boolean(profile.allow_indexing !== 0)
       },
+      proStatus: profile.pro_status,
       links: links.map(l => ({
         id: l.id,
         title: l.title,
@@ -424,23 +434,51 @@ app.post('/api/profile/:username/change-username', async (c) => {
   }
 
   const cleanNewUsername = newUsername.trim().toLowerCase();
-  if (cleanNewUsername.length < 4 || !/^[a-z0-9_]+$/.test(cleanNewUsername)) {
-    return c.json({ error: 'Username must be at least 4 characters and contain only letters, numbers, and underscores' }, 400);
-  }
 
   try {
+    const userRecord = await c.env.DB.prepare('SELECT id, pro_status, last_username_change FROM users WHERE username = ?')
+      .bind(currentUsername)
+      .first();
+
+    if (!userRecord) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const isPro = userRecord.pro_status === 'approved';
+    const minLength = isPro ? 3 : 5;
+
+    if (cleanNewUsername.length < minLength || !/^[a-z0-9_]+$/.test(cleanNewUsername)) {
+      return c.json({ error: `Username must be at least ${minLength} characters and contain only letters, numbers, and underscores` }, 400);
+    }
+
+    if (userRecord.last_username_change) {
+      const lastChange = new Date(userRecord.last_username_change);
+      const now = new Date();
+      const diffHours = (now - lastChange) / (1000 * 60 * 60);
+      const requiredWait = isPro ? 24 : 30 * 24;
+      
+      if (diffHours < requiredWait) {
+        return c.json({ error: `You can only change your username once every ${isPro ? '24 hours' : '30 days'}. Please wait.` }, 429);
+      }
+    }
+
     // 1. Check if new username is already taken
     const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE username = ?')
       .bind(cleanNewUsername)
       .first();
 
     if (existingUser) {
-      return c.json({ error: 'Username is already taken' }, 409);
+      const suggestions = [
+        cleanNewUsername + Math.floor(Math.random() * 999),
+        cleanNewUsername + '_',
+        cleanNewUsername + 'official'
+      ];
+      return c.json({ error: 'Username is already taken', suggestions }, 409);
     }
 
     // 2. Perform transaction / batch update to update username across all tables
     await c.env.DB.batch([
-      c.env.DB.prepare('UPDATE users SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE users SET username = ?, last_username_change = CURRENT_TIMESTAMP WHERE username = ?').bind(cleanNewUsername, currentUsername),
       c.env.DB.prepare('UPDATE profiles SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
       c.env.DB.prepare('UPDATE links SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
       c.env.DB.prepare('UPDATE analytics_views SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),

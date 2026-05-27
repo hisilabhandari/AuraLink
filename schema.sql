@@ -9,8 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
     pro_status TEXT DEFAULT 'none',
     account_status TEXT DEFAULT 'active',
     suspension_reason TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_username_change DATETIME
 );
+
 
 -- Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (

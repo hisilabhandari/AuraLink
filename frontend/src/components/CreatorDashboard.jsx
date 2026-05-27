@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
 import MediaManager from './MediaManager';
+import ProUpgradeModal from './ProUpgradeModal';
 
 const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch };
 
@@ -40,7 +41,11 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
   const [tempUsername, setTempUsername] = useState(username);
   const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
   const [isUsernameChecked, setIsUsernameChecked] = useState(false);
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [changingUsername, setChangingUsername] = useState(false);
+
+  // Pro Modal state
+  const [showProModal, setShowProModal] = useState(false);
 
   useEffect(() => {
     setTempUsername(username);
@@ -48,12 +53,13 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
   }, [username]);
 
   const handleCheckUsername = async () => {
-    if (tempUsername === username || tempUsername.length < 4) return;
+    if (tempUsername === username || tempUsername.length < 3) return;
     try {
       const res = await fetch(`${API_BASE}/profile/check/${tempUsername}`);
       if (res.ok) {
         const data = await res.json();
         setIsUsernameAvailable(data.available);
+        setUsernameSuggestions(data.suggestions || []);
         setIsUsernameChecked(true);
       }
     } catch (err) {
@@ -313,23 +319,17 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
   };
 
   // Upgrade to Pro Request
-  const handleUpgradeToPro = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/profile/${username}/request-pro`, { method: 'POST' });
-      if (res.ok) {
-        setProStatus('pending');
-        // update local cached user
-        const cachedUser = localStorage.getItem('auralink_user');
-        if (cachedUser) {
-          const userObj = JSON.parse(cachedUser);
-          userObj.proStatus = 'pending';
-          localStorage.setItem('auralink_user', JSON.stringify(userObj));
-        }
-      } else {
-        alert('Failed to request pro upgrade.');
-      }
-    } catch (err) {
-      console.error('Error requesting premium status:', err);
+  const handleUpgradeToPro = () => {
+    setShowProModal(true);
+  };
+  
+  const handleProUpgradeSuccess = () => {
+    setProStatus('pending');
+    const cachedUser = localStorage.getItem('auralink_user');
+    if (cachedUser) {
+      const userObj = JSON.parse(cachedUser);
+      userObj.proStatus = 'pending';
+      localStorage.setItem('auralink_user', JSON.stringify(userObj));
     }
   };
 
@@ -646,20 +646,6 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h1 style={{ fontSize: '1.75rem' }}>Creator Dashboard</h1>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Live URL: <a href={`/@${username}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontWeight: '500', textDecoration: 'underline' }}>
-                      {window.location.origin}/@{username} <ExternalLink size={12} style={{ display: 'inline' }} />
-                    </a>
-                  </p>
-                </div>
-                <div>
-                  <button 
-                    onClick={() => handleSave()} 
-                    disabled={saving} 
-                    className="btn btn-primary"
-                  >
-                    <Save size={16} /> {saving ? 'Saving...' : 'Save Page'}
-                  </button>
                 </div>
               </div>
 
@@ -668,7 +654,14 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
                 <>
                   {/* Profile Info */}
                   <section className="editor-card">
-                    <h2 className="card-title"><User size={18} /> Profile Bio Details</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      <h2 className="card-title" style={{ margin: 0 }}><User size={18} /> Profile Bio Details</h2>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                        Live URL: <a href={`/@${username}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontWeight: '500', textDecoration: 'underline' }}>
+                          {window.location.origin}/@{username} <ExternalLink size={10} style={{ display: 'inline' }} />
+                        </a>
+                      </p>
+                    </div>
                     
                     <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                       <label>Avatar Photo (Upload to Cloudflare R2)</label>
@@ -800,30 +793,43 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
                               setIsUsernameChecked(false);
                             }}
                             className="input-control" 
-                            style={{ paddingLeft: '2rem', width: '100%' }}
-                            placeholder="newusername"
-                            maxLength={30}
+                            style={{ paddingLeft: '32px' }}
+                            placeholder="new_username"
                           />
                         </div>
                         <button 
-                          type="button" 
-                          onClick={handleCheckUsername}
+                          onClick={handleCheckUsername} 
+                          disabled={tempUsername === username || tempUsername.length < 3}
                           className="btn btn-secondary"
-                          style={{ margin: 0 }}
-                          disabled={tempUsername === username || tempUsername.length < 4}
                         >
                           Check
                         </button>
                       </div>
                       
-                      {tempUsername.length > 0 && tempUsername.length < 4 && (
-                        <p style={{ color: 'var(--warning)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Must be at least 4 characters.</p>
+                      {isUsernameChecked && !isUsernameAvailable && (
+                        <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', color: 'var(--danger)' }}>
+                          Username is already taken. 
+                          {usernameSuggestions.length > 0 && (
+                            <div style={{ marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
+                              Suggestions: 
+                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                                {usernameSuggestions.map(sug => (
+                                  <button 
+                                    key={sug} 
+                                    onClick={() => { setTempUsername(sug); setIsUsernameChecked(false); }}
+                                    style={{ padding: '0.2rem 0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                                  >
+                                    @{sug}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                       
-                      {isUsernameChecked && (
-                        <p style={{ color: isUsernameAvailable ? 'var(--success)' : 'var(--danger)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                          {isUsernameAvailable ? '✓ Username is available!' : '✗ Username is already taken.'}
-                        </p>
+                      {isUsernameChecked && isUsernameAvailable && (
+                        <p style={{ color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.25rem' }}>✓ Username is available!</p>
                       )}
                     </div>
                     
@@ -1090,7 +1096,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
                             key={idx} 
                             onClick={() => {
                               if (isLocked) {
-                                alert('This is a Pro Theme! Click the Upgrade button on the left sidebar to unlock.');
+                                setShowProModal(true);
                                 return;
                               }
                               const updatedProfile = {
@@ -1574,13 +1580,36 @@ export default function CreatorDashboard({ username, onLogout, isAdmin, onUserna
       </div>
 
       {mediaTarget && (
-        <MediaManager 
-          username={username} 
-          isPro={proStatus === 'approved'}
-          onSelectImage={handleMediaSelect} 
-          onClose={() => setMediaTarget(null)} 
+        <MediaManager
+          username={username}
+          onSelect={handleMediaSelect}
+          onClose={() => setMediaTarget(null)}
         />
       )}
+      
+      {/* Save Action Bar (Sticky at bottom of screen for desktop) */}
+      <div style={{
+        position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 100,
+        backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: '12px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid var(--border-light)',
+        display: 'flex', alignItems: 'center', gap: '1rem'
+      }}>
+        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Unsaved changes?</span>
+        <button 
+          onClick={() => handleSave()} 
+          disabled={saving} 
+          className="btn btn-primary"
+        >
+          <Save size={16} /> {saving ? 'Saving...' : 'Save Page'}
+        </button>
+      </div>
+
+      <ProUpgradeModal 
+        isOpen={showProModal} 
+        onClose={() => setShowProModal(false)}
+        username={username}
+        onUpgradeSuccess={handleProUpgradeSuccess}
+      />
     </div>
   );
 }

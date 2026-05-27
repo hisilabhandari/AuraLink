@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import AuthForm from './components/AuthForm';
 import CreatorDashboard from './components/CreatorDashboard';
 import PublicBioPage from './components/PublicBioPage';
+import ProSalesPage from './components/ProSalesPage';
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
@@ -98,6 +99,9 @@ export default function App() {
           onBackToHome={() => navigateTo('/')} 
         />
       );
+      
+    case '/pro':
+      return <ProSalesPage />;
       
     case '/dashboard':
       if (!user) {

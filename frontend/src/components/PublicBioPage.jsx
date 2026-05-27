@@ -181,13 +181,15 @@ export default function PublicBioPage({ username }) {
         <div className="public-profile-container">
           
           {/* Avatar */}
-          {profile.avatarUrl ? (
-            <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
-          ) : (
-            <div className="bio-avatar-placeholder">
-              <User size={30} style={{ color: 'var(--text-muted)' }} />
-            </div>
-          )}
+          <div className={`bio-avatar-wrapper ${profile.proStatus === 'approved' ? 'pro-avatar-ring' : ''}`}>
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="Avatar" className="bio-avatar" />
+            ) : (
+              <div className="bio-avatar-placeholder">
+                <User size={30} style={{ color: 'var(--text-muted)' }} />
+              </div>
+            )}
+          </div>
 
           {/* Info */}
           <h1 className="bio-name">{profile.name}</h1>
