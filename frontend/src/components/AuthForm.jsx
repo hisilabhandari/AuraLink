@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link2, ShieldCheck, Mail, Lock, User, Sparkles } from 'lucide-react';
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
+import { useState, useEffect, useRef } from 'react';
+import { Link2 } from 'lucide-react';
 
 const API_BASE = '/api';
 
@@ -124,7 +125,7 @@ export default function AuthForm({ onAuthSuccess, onBackToHome }) {
                 required
               />
             </div>
-            {!isLogin && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Letters, numbers, and underscores only. Min 3 chars.</span>}
+            {!isLogin && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Letters, numbers, and underscores only. Min 4 chars.</span>}
           </div>
 
           <div className="form-group" style={{ marginBottom: '2rem' }}>

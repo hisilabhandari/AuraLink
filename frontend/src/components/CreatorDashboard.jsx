@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react-hooks/purity, no-useless-assignment */
+import { useState, useEffect } from 'react';
 import { 
   Link2, BarChart3, Palette, User, Plus, Trash2, Save, 
-  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings, Shield, Image as ImageIcon
+  ExternalLink, LogOut, RefreshCw, Eye, Sparkles, Check, ChevronRight, Settings, Shield, Image as ImageIcon,
+  Menu, X
 } from 'lucide-react';
 import { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFacebook, FaGithub, FaLinkedin, FaSpotify, FaDiscord, FaTwitch } from 'react-icons/fa';
 import MediaManager from './MediaManager';
@@ -10,7 +12,7 @@ const AVAILABLE_ICONS = { FaTwitter, FaInstagram, FaYoutube, FaTiktok, FaFaceboo
 
 const API_BASE = '/api';
 
-export default function CreatorDashboard({ username, onLogout, isAdmin }) {
+export default function CreatorDashboard({ username, onLogout, isAdmin, onUsernameChange }) {
   const [activeTab, setActiveTab] = useState('links'); // 'links', 'design', 'analytics', 'admin'
   const [profile, setProfile] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -29,6 +31,65 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
   // Media Manager state
   const [mediaTarget, setMediaTarget] = useState(null);
+
+  // Mobile UI States
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+
+  // Username change states
+  const [tempUsername, setTempUsername] = useState(username);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
+  const [isUsernameChecked, setIsUsernameChecked] = useState(false);
+  const [changingUsername, setChangingUsername] = useState(false);
+
+  useEffect(() => {
+    setTempUsername(username);
+    setIsUsernameChecked(false);
+  }, [username]);
+
+  const handleCheckUsername = async () => {
+    if (tempUsername === username || tempUsername.length < 4) return;
+    try {
+      const res = await fetch(`${API_BASE}/profile/check/${tempUsername}`);
+      if (res.ok) {
+        const data = await res.json();
+        setIsUsernameAvailable(data.available);
+        setIsUsernameChecked(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleChangeUsernameSubmit = async () => {
+    if (!isUsernameChecked || !isUsernameAvailable || tempUsername === username) return;
+    if (!confirm(`Are you sure you want to change your username from @${username} to @${tempUsername}? Your page URL will change.`)) return;
+    
+    try {
+      setChangingUsername(true);
+      const res = await fetch(`${API_BASE}/profile/${username}/change-username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newUsername: tempUsername })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        alert('Your username has been updated successfully!');
+        if (onUsernameChange) {
+          onUsernameChange(data.username);
+        }
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Failed to change username.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred during username update.');
+    } finally {
+      setChangingUsername(false);
+    }
+  };
 
   const handleUpdateLinkStyle = (linkId, key, value) => {
     const updatedLinks = profile.links.map(l => {
@@ -281,6 +342,19 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
     );
   }
 
+  if (!profile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--danger)' }}>Profile Not Found</h2>
+        <p style={{ color: 'var(--text-secondary)' }}>Could not load the profile configuration for @{username}.</p>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+          <button onClick={fetchData} className="btn btn-primary"><RefreshCw size={16} /> Retry Connection</button>
+          <button onClick={onLogout} className="btn btn-secondary">Log Out</button>
+        </div>
+      </div>
+    );
+  }
+
   // Pre-made Theme Presets
   const themePresets = [
     {
@@ -467,10 +541,24 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
 
   return (
     <div className="app-container">
+      {/* Mobile Top Header */}
+      <header className="mobile-dashboard-header">
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="mobile-menu-btn" title="Toggle Menu">
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+        <div className="nav-brand" style={{ background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 800 }}>
+          <Link2 size={20} style={{ color: 'var(--accent-primary)' }} />
+          <span>AuraLink</span>
+        </div>
+        <button onClick={() => setShowMobilePreview(true)} className="mobile-preview-btn-top" title="View Live Preview">
+          <Eye size={20} />
+        </button>
+      </header>
+
       <div className="dashboard-layout">
         
         {/* Sidebar Nav */}
-        <aside className="sidebar">
+        <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
           <div className="sidebar-top">
             <div className="nav-brand" style={{ padding: '0 0.5rem 1.5rem 0.5rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
               <Link2 size={24} />
@@ -479,7 +567,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
             
             <nav className="sidebar-menu">
               <button 
-                onClick={() => setActiveTab('links')}
+                onClick={() => { setActiveTab('links'); setMobileMenuOpen(false); }}
                 className={`sidebar-item ${activeTab === 'links' ? 'active' : ''}`}
               >
                 <User size={18} />
@@ -487,7 +575,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
               </button>
               
               <button 
-                onClick={() => setActiveTab('design')}
+                onClick={() => { setActiveTab('design'); setMobileMenuOpen(false); }}
                 className={`sidebar-item ${activeTab === 'design' ? 'active' : ''}`}
               >
                 <Palette size={18} />
@@ -495,7 +583,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
               </button>
               
               <button 
-                onClick={() => setActiveTab('analytics')}
+                onClick={() => { setActiveTab('analytics'); setMobileMenuOpen(false); }}
                 className={`sidebar-item ${activeTab === 'analytics' ? 'active' : ''}`}
               >
                 <BarChart3 size={18} />
@@ -504,7 +592,7 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
               
               {isAdmin && (
                 <button 
-                  onClick={() => setActiveTab('admin')}
+                  onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }}
                   className={`sidebar-item ${activeTab === 'admin' ? 'active' : ''}`}
                   style={{ marginTop: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}
                 >
@@ -539,8 +627,16 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
           </div>
         </aside>
 
+        {mobileMenuOpen && <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)}></div>}
+
         {/* Content Pane */}
         <main className="workspace-content">
+          {/* Floating preview FAB for mobile */}
+          <button onClick={() => setShowMobilePreview(true)} className="mobile-preview-fab" title="View Simulator Live">
+            <Eye size={18} />
+            <span>Live Preview</span>
+          </button>
+
           <div className="splitscreen">
             
             {/* Left: Editor form */}
@@ -551,8 +647,8 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                 <div>
                   <h1 style={{ fontSize: '1.75rem' }}>Creator Dashboard</h1>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Live URL: <a href={`#p/${username}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontWeight: '500', textDecoration: 'underline' }}>
-                      {window.location.origin}/#p/{username} <ExternalLink size={12} style={{ display: 'inline' }} />
+                    Live URL: <a href={`/@${username}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', fontWeight: '500', textDecoration: 'underline' }}>
+                      {window.location.origin}/@{username} <ExternalLink size={12} style={{ display: 'inline' }} />
                     </a>
                   </p>
                 </div>
@@ -684,6 +780,61 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                         Allow Search Engines to Index Page
                       </label>
                     </div>
+                  </section>
+
+                  {/* Change Username Card */}
+                  <section className="editor-card" style={{ marginBottom: '1.5rem' }}>
+                    <h2 className="card-title"><User size={18} /> Update Username</h2>
+                    
+                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                      <label>New Username</label>
+                      <div style={{ position: 'relative', display: 'flex', gap: '0.5rem' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>@</span>
+                          <input 
+                            type="text" 
+                            value={tempUsername} 
+                            onChange={(e) => {
+                              const val = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                              setTempUsername(val);
+                              setIsUsernameChecked(false);
+                            }}
+                            className="input-control" 
+                            style={{ paddingLeft: '2rem', width: '100%' }}
+                            placeholder="newusername"
+                            maxLength={30}
+                          />
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={handleCheckUsername}
+                          className="btn btn-secondary"
+                          style={{ margin: 0 }}
+                          disabled={tempUsername === username || tempUsername.length < 4}
+                        >
+                          Check
+                        </button>
+                      </div>
+                      
+                      {tempUsername.length > 0 && tempUsername.length < 4 && (
+                        <p style={{ color: 'var(--warning)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Must be at least 4 characters.</p>
+                      )}
+                      
+                      {isUsernameChecked && (
+                        <p style={{ color: isUsernameAvailable ? 'var(--success)' : 'var(--danger)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                          {isUsernameAvailable ? '✓ Username is available!' : '✗ Username is already taken.'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <button 
+                      type="button" 
+                      onClick={handleChangeUsernameSubmit}
+                      className="btn btn-primary"
+                      disabled={!isUsernameChecked || !isUsernameAvailable || tempUsername === username || changingUsername}
+                    >
+                      {changingUsername ? 'Updating...' : 'Apply New Username'}
+                    </button>
                   </section>
 
                   {/* Add New Link */}
@@ -855,15 +1006,63 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
                                     </div>
                                     <div>
                                       <label>Bg Color</label>
-                                      <input type="text" value={link.buttonColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                        <input 
+                                          type="color" 
+                                          value={link.buttonColor && link.buttonColor.startsWith('#') ? link.buttonColor : '#3b82f6'} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)}
+                                          style={{ width: '36px', height: '36px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px', background: 'transparent' }} 
+                                        />
+                                        <input 
+                                          type="text" 
+                                          value={link.buttonColor || ''} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonColor', e.target.value)} 
+                                          onBlur={() => handleSave()} 
+                                          className="input-control" 
+                                          style={{ flex: 1, padding: '0.4rem' }}
+                                          placeholder="Inherit" 
+                                        />
+                                      </div>
                                     </div>
                                     <div>
                                       <label>Text Color</label>
-                                      <input type="text" value={link.buttonTextColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                        <input 
+                                          type="color" 
+                                          value={link.buttonTextColor && link.buttonTextColor.startsWith('#') ? link.buttonTextColor : '#ffffff'} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)}
+                                          style={{ width: '36px', height: '36px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px', background: 'transparent' }} 
+                                        />
+                                        <input 
+                                          type="text" 
+                                          value={link.buttonTextColor || ''} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonTextColor', e.target.value)} 
+                                          onBlur={() => handleSave()} 
+                                          className="input-control" 
+                                          style={{ flex: 1, padding: '0.4rem' }}
+                                          placeholder="Inherit" 
+                                        />
+                                      </div>
                                     </div>
                                     <div style={{ gridColumn: 'span 2' }}>
                                       <label>Border Color</label>
-                                      <input type="text" value={link.buttonBorderColor || ''} onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)} onBlur={() => handleSave()} className="input-control" placeholder="Inherit" />
+                                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                        <input 
+                                          type="color" 
+                                          value={link.buttonBorderColor && link.buttonBorderColor.startsWith('#') ? link.buttonBorderColor : '#cccccc'} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)}
+                                          style={{ width: '36px', height: '36px', padding: 0, border: 'none', cursor: 'pointer', borderRadius: '4px', background: 'transparent' }} 
+                                        />
+                                        <input 
+                                          type="text" 
+                                          value={link.buttonBorderColor || ''} 
+                                          onChange={(e) => handleUpdateLinkStyle(link.id, 'buttonBorderColor', e.target.value)} 
+                                          onBlur={() => handleSave()} 
+                                          className="input-control" 
+                                          style={{ flex: 1, padding: '0.4rem' }}
+                                          placeholder="Inherit" 
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -1264,8 +1463,15 @@ export default function CreatorDashboard({ username, onLogout, isAdmin }) {
             </div>
 
             {/* Right: Phone preview */}
-            <div className="preview-pane">
-              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className={`preview-pane ${showMobilePreview ? 'active' : ''}`}>
+              <div className="mobile-preview-header">
+                <h3>Live Simulator</h3>
+                <button onClick={() => setShowMobilePreview(false)} className="btn-close-preview" title="Close Preview">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.4rem' }} className="desktop-preview-label">
                 <Eye size={14} /> LIVE PREVIEW (SIMULATOR)
               </div>
               

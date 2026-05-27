@@ -99,7 +99,8 @@ INSERT OR IGNORE INTO users (id, username, password_hash, pro_status, role) VALU
 
 INSERT OR IGNORE INTO profiles (username, name, bio, avatar_url, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES 
 ('creator1', 'Alex Rivers', 'Digital Creator & Tech Reviewer. Sharing my favorite gear, templates, and courses.', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80', 'gradient', 'linear-gradient(135deg, #1e1b4b, #311042)', 'Outfit', 'glassmorphic', 'rgba(255, 255, 255, 0.1)', '#ffffff', 'rgba(255, 255, 255, 0.2)'),
-('demo', 'Jane Doe', 'Minimalist Designer & Writer. Building clean interfaces and writing monthly letters.', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&h=256&q=80', 'flat', '#0f172a', 'Inter', 'solid', '#3b82f6', '#ffffff', 'transparent');
+('demo', 'Jane Doe', 'Minimalist Designer & Writer. Building clean interfaces and writing monthly letters.', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&h=256&q=80', 'flat', '#0f172a', 'Inter', 'solid', '#3b82f6', '#ffffff', 'transparent'),
+('admin', 'Admin Staff', 'AuraLink Platform Administrator.', '', 'gradient', 'linear-gradient(135deg, #0f172a, #1e293b)', 'Inter', 'solid', '#3b82f6', '#ffffff', 'transparent');
 
 INSERT OR IGNORE INTO links (id, username, title, url, is_active, display_order) VALUES 
 ('link-1', 'creator1', '🎥 My YouTube Channel', 'https://youtube.com', 1, 0),
@@ -107,7 +108,8 @@ INSERT OR IGNORE INTO links (id, username, title, url, is_active, display_order)
 ('link-3', 'creator1', '🛍️ Affiliate Shop: Setup & Gear', 'https://amazon.com', 1, 2),
 ('link-4', 'creator1', '🐦 Daily Tech Tips on Twitter / X', 'https://x.com', 1, 3),
 ('link-demo-1', 'demo', '🎨 UI Design Portfolio', 'https://dribbble.com', 1, 0),
-('link-demo-2', 'demo', '✍️ Read My Newsletter', 'https://substack.com', 1, 1);
+('link-demo-2', 'demo', '✍️ Read My Newsletter', 'https://substack.com', 1, 1),
+('link-admin-1', 'admin', '🔧 Admin Tools', 'https://auralink.com/admin', 1, 0);
 
 INSERT OR IGNORE INTO analytics_views (id, username, timestamp, referrer) VALUES
 ('v1', 'creator1', '2026-05-21 02:00:00', 'Instagram'),

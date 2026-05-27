@@ -44,8 +44,8 @@ app.post('/api/auth/register', (req, res) => {
   }
 
   const cleanUsername = username.trim().toLowerCase();
-  if (cleanUsername.length < 3 || !/^[a-z0-9_]+$/.test(cleanUsername)) {
-    return res.status(400).json({ error: 'Username must be at least 3 characters and contain only letters, numbers, and underscores' });
+  if (cleanUsername.length < 4 || !/^[a-z0-9_]+$/.test(cleanUsername)) {
+    return res.status(400).json({ error: 'Username must be at least 4 characters and contain only letters, numbers, and underscores' });
   }
 
   const db = readDB();
@@ -57,7 +57,8 @@ app.post('/api/auth/register', (req, res) => {
   db.users[cleanUsername] = {
     username: cleanUsername,
     password, // Storing in plain text for this local prototype/demo simplicity
-    isPremium: false
+    isPremium: false,
+    role: 'user'
   };
 
   // Create Default Profile
@@ -105,7 +106,7 @@ app.post('/api/auth/login', (req, res) => {
 
   res.json({
     message: 'Login successful',
-    user: { username: user.username, isPremium: user.isPremium }
+    user: { username: user.username, role: user.role || 'user', isPremium: user.isPremium }
   });
 });
 
@@ -124,9 +125,33 @@ app.get('/api/profile/:username', (req, res) => {
   const cleanUsername = req.params.username.trim().toLowerCase();
   const db = readDB();
 
-  const profile = db.profiles[cleanUsername];
+  let profile = db.profiles[cleanUsername];
   if (!profile) {
-    return res.status(404).json({ error: 'Profile not found' });
+    // Auto-create a default profile if user exists but has no profile
+    if (db.users[cleanUsername]) {
+      db.profiles[cleanUsername] = {
+        username: cleanUsername,
+        name: cleanUsername,
+        bio: 'Welcome to my new link page!',
+        avatarUrl: '',
+        theme: {
+          backgroundType: 'gradient',
+          backgroundValue: 'linear-gradient(135deg, #0f172a, #1e293b)',
+          font: 'Inter',
+          buttonStyle: 'solid',
+          buttonColor: '#3b82f6',
+          buttonTextColor: '#ffffff',
+          buttonBorderColor: 'transparent'
+        },
+        links: [
+          { id: 'link-default-1', title: '👋 Welcome to my Link Page!', url: 'https://google.com', active: true }
+        ]
+      };
+      writeDB(db);
+      profile = db.profiles[cleanUsername];
+    } else {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
   }
 
   res.json(profile);
@@ -155,6 +180,69 @@ app.put('/api/profile/:username', (req, res) => {
   writeDB(db);
 
   res.json({ message: 'Profile updated successfully', profile });
+});
+
+// Change Username
+app.post('/api/profile/:username/change-username', (req, res) => {
+  const currentUsername = req.params.username.trim().toLowerCase();
+  const { newUsername } = req.body;
+  
+  if (!newUsername) {
+    return res.status(400).json({ error: 'New username is required' });
+  }
+  
+  const cleanNewUsername = newUsername.trim().toLowerCase();
+  if (cleanNewUsername.length < 4 || !/^[a-z0-9_]+$/.test(cleanNewUsername)) {
+    return res.status(400).json({ error: 'Username must be at least 4 characters and contain only letters, numbers, and underscores' });
+  }
+  
+  const db = readDB();
+  
+  // Check if new username is already taken
+  if (db.users[cleanNewUsername]) {
+    return res.status(409).json({ error: 'Username is already taken' });
+  }
+  
+  const user = db.users[currentUsername];
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  
+  // Update users object key
+  user.username = cleanNewUsername;
+  db.users[cleanNewUsername] = user;
+  delete db.users[currentUsername];
+  
+  // Update profiles object key
+  const profile = db.profiles[currentUsername];
+  if (profile) {
+    profile.username = cleanNewUsername;
+    db.profiles[cleanNewUsername] = profile;
+    delete db.profiles[currentUsername];
+  }
+  
+  // Update analytics views references
+  db.views = db.views.map(v => {
+    if (v.username === currentUsername) {
+      return { ...v, username: cleanNewUsername };
+    }
+    return v;
+  });
+  
+  // Update analytics clicks references
+  db.clicks = db.clicks.map(c => {
+    if (c.username === currentUsername) {
+      return { ...c, username: cleanNewUsername };
+    }
+    return c;
+  });
+  
+  writeDB(db);
+  
+  res.json({
+    message: 'Username updated successfully',
+    username: cleanNewUsername
+  });
 });
 
 // Toggle Premium Status (Demo Helper)

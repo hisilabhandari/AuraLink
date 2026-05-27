@@ -25,8 +25,8 @@ app.post('/api/auth/register', async (c) => {
   }
 
   const cleanUsername = username.trim().toLowerCase();
-  if (cleanUsername.length < 3 || !/^[a-z0-9_]+$/.test(cleanUsername)) {
-    return c.json({ error: 'Username must be at least 3 characters and contain only letters, numbers, and underscores' }, 400);
+  if (cleanUsername.length < 4 || !/^[a-z0-9_]+$/.test(cleanUsername)) {
+    return c.json({ error: 'Username must be at least 4 characters and contain only letters, numbers, and underscores' }, 400);
   }
 
   try {
@@ -172,7 +172,7 @@ app.get('/api/profile/:username', async (c) => {
   const cleanUsername = c.req.param('username').trim().toLowerCase();
 
   try {
-    const profileData = await c.env.DB.prepare(`
+    let profileData = await c.env.DB.prepare(`
       SELECT p.*, u.account_status 
       FROM profiles p 
       JOIN users u ON p.username = u.username 
@@ -180,7 +180,41 @@ app.get('/api/profile/:username', async (c) => {
     `).bind(cleanUsername).first();
 
     if (!profileData) {
-      return c.json({ error: 'Profile not found' }, 404);
+      // Check if user exists
+      const user = await c.env.DB.prepare('SELECT account_status FROM users WHERE username = ?')
+        .bind(cleanUsername)
+        .first();
+
+      if (user) {
+        // User exists but has no profile, auto-create profile and default link
+        await c.env.DB.batch([
+          c.env.DB.prepare('INSERT INTO profiles (username, name, bio, avatar_url, background_type, background_value, font, button_style, button_color, button_text_color, button_border_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind(
+              cleanUsername,
+              cleanUsername,
+              'Welcome to my new link page!',
+              '',
+              'gradient',
+              'linear-gradient(135deg, #0f172a, #1e293b)',
+              'Inter',
+              'solid',
+              '#3b82f6',
+              '#ffffff',
+              'transparent'
+            ),
+          c.env.DB.prepare('INSERT INTO links (id, username, title, url, is_active, display_order) VALUES (?, ?, ?, ?, 1, 0)')
+            .bind(crypto.randomUUID(), cleanUsername, '👋 Welcome to my Link Page!', 'https://google.com')
+        ]);
+
+        profileData = await c.env.DB.prepare(`
+          SELECT p.*, u.account_status 
+          FROM profiles p 
+          JOIN users u ON p.username = u.username 
+          WHERE p.username = ?
+        `).bind(cleanUsername).first();
+      } else {
+        return c.json({ error: 'Profile not found' }, 404);
+      }
     }
     
     if (profileData.account_status === 'suspended') {
@@ -377,6 +411,51 @@ app.put('/api/profile/:username', async (c) => {
   } catch (err) {
     console.error(err);
     return c.json({ error: 'Error saving profile modifications' }, 500);
+  }
+});
+
+// Change Username
+app.post('/api/profile/:username/change-username', async (c) => {
+  const currentUsername = c.req.param('username').trim().toLowerCase();
+  const { newUsername } = await c.req.json();
+
+  if (!newUsername) {
+    return c.json({ error: 'New username is required' }, 400);
+  }
+
+  const cleanNewUsername = newUsername.trim().toLowerCase();
+  if (cleanNewUsername.length < 4 || !/^[a-z0-9_]+$/.test(cleanNewUsername)) {
+    return c.json({ error: 'Username must be at least 4 characters and contain only letters, numbers, and underscores' }, 400);
+  }
+
+  try {
+    // 1. Check if new username is already taken
+    const existingUser = await c.env.DB.prepare('SELECT id FROM users WHERE username = ?')
+      .bind(cleanNewUsername)
+      .first();
+
+    if (existingUser) {
+      return c.json({ error: 'Username is already taken' }, 409);
+    }
+
+    // 2. Perform transaction / batch update to update username across all tables
+    await c.env.DB.batch([
+      c.env.DB.prepare('UPDATE users SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE profiles SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE links SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE analytics_views SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE analytics_clicks SET username = ? WHERE username = ?').bind(cleanNewUsername, currentUsername),
+      c.env.DB.prepare('UPDATE profile_reports SET reported_username = ? WHERE reported_username = ?').bind(cleanNewUsername, currentUsername)
+    ]);
+
+    return c.json({
+      message: 'Username updated successfully',
+      username: cleanNewUsername
+    });
+
+  } catch (err) {
+    console.error(err);
+    return c.json({ error: 'Failed to update username in database' }, 500);
   }
 });
 
@@ -603,10 +682,40 @@ app.post('/api/upload', async (c) => {
     }
 
     const extension = file.name.split('.').pop();
-    const uniqueName = `${crypto.randomUUID()}.${extension}`;
-    
-    // Determine path based on username presence
-    const filePath = username ? `User/${username}/${uniqueName}` : `Assets/${uniqueName}`;
+    const originalBaseName = file.name.substring(0, file.name.lastIndexOf('.'));
+    const sanitizedBaseName = originalBaseName.replace(/[^a-zA-Z0-9_\-\s]/g, '').replace(/\s+/g, '_');
+    const safeName = `${sanitizedBaseName}.${extension}`;
+
+    let filePath = `Assets/${safeName}`;
+
+    if (username) {
+      // Get user premium info from DB
+      const user = await c.env.DB.prepare('SELECT pro_status FROM users WHERE username = ?')
+        .bind(username.trim().toLowerCase())
+        .first();
+
+      const isPro = user && user.pro_status === 'approved';
+      const limit = isPro ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+      const limitStr = isPro ? '100MB' : '15MB';
+
+      // Sum user's current storage space in R2
+      const prefix = `User/${username}/`;
+      const listed = await c.env.BUCKET.list({ prefix });
+      let totalSize = listed.objects.reduce((sum, obj) => sum + obj.size, 0);
+
+      // Adjust size if overwriting an existing file under the same name
+      filePath = `User/${username}/${safeName}`;
+      const existingFile = listed.objects.find(obj => obj.key === filePath);
+      if (existingFile) {
+        totalSize -= existingFile.size;
+      }
+
+      if (totalSize + file.size > limit) {
+        return c.json({ 
+          error: `Storage limit exceeded. Your account limit is ${limitStr}. Current usage is ${(totalSize / (1024 * 1024)).toFixed(2)}MB. Uploading this file (${(file.size / (1024 * 1024)).toFixed(2)}MB) would exceed the limit. Please upgrade to Pro to unlock up to 100MB of storage.` 
+        }, 400);
+      }
+    }
     
     // Put file buffer to Cloudflare R2 bucket
     const buffer = await file.arrayBuffer();

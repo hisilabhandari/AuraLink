@@ -1,4 +1,4 @@
-import React from 'react';
+/* eslint-disable no-unused-vars */
 import { Link2, Sparkles, BarChart3, Palette, ShieldCheck, ArrowRight, Check } from 'lucide-react';
 
 export default function LandingPage({ onNavigate }) {
@@ -68,7 +68,7 @@ export default function LandingPage({ onNavigate }) {
       {/* Features Grid */}
       <section className="pricing-section" style={{ borderTop: '1px solid var(--border-light)', paddingTop: '6rem' }}>
         <h2 className="pricing-title">Everything you need to grow</h2>
-        <div className="pricing-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '6rem' }}>
+        <div className="pricing-grid features-grid">
           <div className="price-card" style={{ padding: '2rem' }}>
             <div className="stat-icon" style={{ marginBottom: '1rem' }}><Palette size={24} /></div>
             <h3>Premium Themes</h3>

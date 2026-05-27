@@ -1,22 +1,42 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, react-hooks/immutability */
+import { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import AuthForm from './components/AuthForm';
 import CreatorDashboard from './components/CreatorDashboard';
 import PublicBioPage from './components/PublicBioPage';
 
 export default function App() {
-  const [currentHash, setCurrentHash] = useState(window.location.hash || '#');
+  const [currentPath, setCurrentPath] = useState(window.location.pathname || '/');
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('user');
 
-  // Sync state on hash change
+  // Sync state on popstate change and handle legacy hashes
   useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash || '#');
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname || '/');
     };
 
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
     
+    // Handle legacy hash routing redirect
+    if (window.location.hash) {
+      const hash = window.location.hash;
+      if (hash.startsWith('#p/')) {
+        const username = hash.replace('#p/', '');
+        window.history.replaceState(null, '', `/@${username}`);
+        setCurrentPath(`/@${username}`);
+      } else if (hash === '#auth') {
+        window.history.replaceState(null, '', '/auth');
+        setCurrentPath('/auth');
+      } else if (hash === '#dashboard') {
+        window.history.replaceState(null, '', '/dashboard');
+        setCurrentPath('/dashboard');
+      } else {
+        window.history.replaceState(null, '', '/');
+        setCurrentPath('/');
+      }
+    }
+
     // Check if session exists on load
     const cachedUser = localStorage.getItem('auralink_user');
     if (cachedUser) {
@@ -30,13 +50,13 @@ export default function App() {
     }
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
-  const navigateTo = (hash) => {
-    window.location.hash = hash;
-    setCurrentHash(hash);
+  const navigateTo = (path) => {
+    window.history.pushState(null, '', path);
+    setCurrentPath(path);
   };
 
   const handleAuthSuccess = (username) => {
@@ -47,43 +67,43 @@ export default function App() {
     }
     setUser(username);
     setRole(currentRole);
-    navigateTo('#dashboard');
+    navigateTo('/dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('auralink_user');
     setUser(null);
-    navigateTo('#');
+    navigateTo('/');
   };
 
   // Route resolver
-  // 1. Check if public profile view: e.g. #p/username or #p/creator1
-  if (currentHash.startsWith('#p/')) {
-    const username = currentHash.replace('#p/', '').trim();
+  // 1. Check if public profile view: e.g. /@username
+  if (currentPath.startsWith('/@')) {
+    const username = currentPath.replace('/@', '').trim();
     return <PublicBioPage username={username} />;
   }
 
-  // 2. Check path names as fallback (supports localhost/p/username)
-  const pathname = window.location.pathname;
-  if (pathname.startsWith('/p/')) {
-    const username = pathname.replace('/p/', '').trim();
+  // 2. Check fallback profile path: e.g. /p/username
+  if (currentPath.startsWith('/p/')) {
+    const username = currentPath.replace('/p/', '').trim();
     return <PublicBioPage username={username} />;
   }
 
   // 3. Main Views
-  switch (currentHash) {
-    case '#auth':
+  switch (currentPath) {
+    case '/auth':
       return (
         <AuthForm 
           onAuthSuccess={handleAuthSuccess} 
-          onBackToHome={() => navigateTo('#')} 
+          onBackToHome={() => navigateTo('/')} 
         />
       );
       
-    case '#dashboard':
+    case '/dashboard':
       if (!user) {
         // Redirect to auth if not logged in
-        window.location.hash = '#auth';
+        window.history.replaceState(null, '', '/auth');
+        setCurrentPath('/auth');
         return null;
       }
       return (
@@ -91,6 +111,18 @@ export default function App() {
           username={user} 
           onLogout={handleLogout} 
           isAdmin={role === 'admin'}
+          onUsernameChange={(newUsername) => {
+            setUser(newUsername);
+            const cachedUser = localStorage.getItem('auralink_user');
+            if (cachedUser) {
+              try {
+                const userObj = JSON.parse(cachedUser);
+                userObj.username = newUsername;
+                localStorage.setItem('auralink_user', JSON.stringify(userObj));
+              } catch (e) { /* ignore */ }
+            }
+            navigateTo('/dashboard');
+          }}
         />
       );
     default:

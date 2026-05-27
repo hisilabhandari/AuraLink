@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+import { useState, useEffect } from 'react';
 import { Image, Upload, Trash2, X, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const API_BASE = '/api';

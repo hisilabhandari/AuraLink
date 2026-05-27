@@ -3,12 +3,20 @@
     "creator1": {
       "username": "creator1",
       "password": "password123",
-      "isPremium": true
+      "isPremium": true,
+      "role": "user"
     },
     "demo": {
       "username": "demo",
       "password": "password123",
-      "isPremium": false
+      "isPremium": false,
+      "role": "user"
+    },
+    "admin": {
+      "username": "admin",
+      "password": "adminpassword",
+      "isPremium": true,
+      "role": "admin"
     }
   },
   "profiles": {
